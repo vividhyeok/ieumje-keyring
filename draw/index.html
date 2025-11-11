@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>도트 그림 키링 제작</title>
+    <link rel="icon" href="data:,">
     <script src="../lib/jquery-2.1.3.min.js"></script>
     <script src="../lib/base62.js"></script>
     <script src="../lib/qrcode.min.js"></script>
@@ -105,25 +106,17 @@
         #cover {
             display: none;
             position: fixed;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            justify-content: center;
-            align-items: center;
-        }
-        #cover_container {
-            width: 90%;
-            max-width: 350px;
-            padding: 20px;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            max-width: 90vw;
             background: #FFF;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             border-radius: 15px;
+            padding: 20px;
+            z-index: 1000;
             text-align: center;
-            position: relative;
         }
-        #cover_container h2 { margin-top: 0; }
         #qrcode { margin: 20px auto; }
         #share_url {
             width: 100%;
@@ -148,10 +141,11 @@
             color: #888;
         }
         /* Color Classes */
-        .c0 { background-color: #000000; } /* Black */
-        .c1 { background-color: #FFFF00; } /* Yellow */
-        .c2 { background-color: #FF0000; } /* Red */
-        .c3 { background-color: #0000FF; } /* Blue */
+        .c0 { background-color: #FFFFFF; } /* White */
+        .c1 { background-color: #000000; } /* Black */
+        .c2 { background-color: #FFFF00; } /* Yellow */
+        .c3 { background-color: #FF0000; } /* Red */
+        .c4 { background-color: #0000FF; } /* Blue */
         .unfilled {
             background-color: #e0e0e0; /* Light gray for unfilled */
             border: 1px dashed #999;
@@ -160,7 +154,6 @@
 </head>
 <body>
     <div id="main_container">
-        <h1 id="title">도트 그림 키링 제작</h1>
         <div id="bit_area"></div>
         <div id="control_panel">
             <div id="color_panel"></div>
@@ -169,32 +162,52 @@
     </div>
 
     <div id="cover">
-        <div id="cover_container">
-            <div id="btn_close">×</div>
-            <h2>완성!</h2>
-            <p>운영자에게 QR코드를 보여주세요.</p>
-            <div id="qrcode"></div>
-            <input id="share_url" readonly>
-        </div>
+        <div id="btn_close">×</div>
+        <h2>완성!</h2>
+        <p>운영자에게 QR코드를 보여주세요.</p>
+        <div id="qrcode"></div>
+        <input id="share_url" readonly>
     </div>
 
     <script>
         const PALETTE = [
-            { name: 'BLACK', class: 'c0' },
-            { name: 'YELLOW', class: 'c1' },
-            { name: 'RED', class: 'c2' },
-            { name: 'BLUE', class: 'c3' }
+            { name: 'WHITE', class: 'c0' },
+            { name: 'BLACK', class: 'c1' },
+            { name: 'YELLOW', class: 'c2' },
+            { name: 'RED', class: 'c3' },
+            { name: 'BLUE', class: 'c4' }
         ];
-        let currentColorIndex = 0;
+        let currentColorIndex = 1;
+
+        let isDrawing = false;
 
         $(document).ready(function () {
             createGrid();
             createPalette();
 
-            $('#bit_area').on("click", '.bit_grid', function () {
-                $(this).data('colorIndex', currentColorIndex);
-                $(this).attr('class', 'bit_grid ' + PALETTE[currentColorIndex].class);
-                $(this).removeClass('unfilled'); // Mark as filled
+            function fillCell(cell) {
+                $(cell).data('colorIndex', currentColorIndex);
+                $(cell).attr('class', 'bit_grid ' + PALETTE[currentColorIndex].class);
+            }
+
+            $('#bit_area').on("mousedown touchstart", '.bit_grid', function (e) {
+                e.preventDefault();
+                isDrawing = true;
+                fillCell(this);
+            });
+
+            $('#bit_area').on("mousemove touchmove", function (e) {
+                e.preventDefault();
+                if (isDrawing) {
+                    const target = document.elementFromPoint(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY);
+                    if ($(target).hasClass('bit_grid')) {
+                        fillCell(target);
+                    }
+                }
+            });
+
+            $(document).on("mouseup touchend", function () {
+                isDrawing = false;
             });
 
             $('#color_panel').on('click', '.color_dot', function() {
@@ -223,8 +236,8 @@
             const bitArea = $('#bit_area');
             for (var i = 0; i < 64; i++) {
                 const gridCell = $('<div>')
-                    .addClass('bit_grid unfilled') // Add 'unfilled' class
-                    .data('colorIndex', -1); // -1 indicates not colored
+                    .addClass('bit_grid c0') // Start with white
+                    .data('colorIndex', 0); // 0 indicates white
                 bitArea.append(gridCell);
             }
         }
@@ -244,25 +257,15 @@
 
         function generateLink() {
             let binaryString = '';
-            let allCellsFilled = true;
             $('.bit_grid').each(function() {
                 const colorIndex = $(this).data('colorIndex');
-                if (colorIndex === -1) {
-                    allCellsFilled = false;
-                    return false; // Break out of .each loop
-                }
-                binaryString += colorIndex.toString(2).padStart(2, '0');
+                binaryString += colorIndex.toString(2).padStart(3, '0');
             });
-
-            if (!allCellsFilled) {
-                alert('색을 다 채워야 확인 가능합니다.');
-                return;
-            }
 
             const dataInt = BigInt('0b' + binaryString);
             const encoded = base62.encode(dataInt);
 
-            const url = new URL('print/index.html', window.location.href).href + '?b62=' + encoded;
+            const url = new URL('float/index.html', window.location.href).href + '?b62=' + encoded;
             
             $('#share_url').val(url);
             

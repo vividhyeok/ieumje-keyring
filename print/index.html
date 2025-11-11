@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>도트 그림 키링 보기</title>
+  <link rel="icon" href="data:,">
   <script src="../lib/jquery-2.1.3.min.js"></script>
   <script src="../lib/base62.js"></script>
   <script src="../lib/qrcode.min.js"></script>
@@ -91,10 +92,11 @@
     }
 
     /* Color Classes - Must match draw page */
-    .c0 { background-color: #000000; } /* Black */
-    .c1 { background-color: #FFFF00; } /* Yellow */
-    .c2 { background-color: #FF0000; } /* Red */
-    .c3 { background-color: #0000FF; } /* Blue */
+    .c0 { background-color: #FFFFFF; } /* White */
+    .c1 { background-color: #000000; } /* Black */
+    .c2 { background-color: #FFFF00; } /* Yellow */
+    .c3 { background-color: #FF0000; } /* Red */
+    .c4 { background-color: #0000FF; } /* Blue */
   </style>
 </head>
 <body>
@@ -120,10 +122,11 @@
     const base62CodeDiv = document.getElementById('base62_code');
 
     const PALETTE_COLORS = [
-        '#000000', // c0 - Black
-        '#FFFF00', // c1 - Yellow
-        '#FF0000', // c2 - Red
-        '#0000FF'  // c3 - Blue
+        '#FFFFFF', // c0 - White
+        '#000000', // c1 - Black
+        '#FFFF00', // c2 - Yellow
+        '#FF0000', // c3 - Red
+        '#0000FF'  // c4 - Blue
     ];
 
     // 이동 한계(px)
@@ -190,7 +193,7 @@
 
     function renderPixelArt(b62String) {
         const decodedBigInt = base62.decode(b62String);
-        const binaryString = decodedBigInt.toString(2).padStart(128, '0'); // 64 pixels * 2 bits = 128 bits
+        const binaryString = decodedBigInt.toString(2).padStart(192, '0'); // 64 pixels * 3 bits = 192 bits
 
         stage.innerHTML = ''; // Clear existing content
         pixelElements = [];
@@ -200,7 +203,7 @@
             const pixel = document.createElement('div');
             pixel.classList.add('pixel');
 
-            const colorBits = binaryString.substring(i * 2, i * 2 + 2);
+            const colorBits = binaryString.substring(i * 3, i * 3 + 3);
             const colorIndex = parseInt(colorBits, 2);
             pixel.classList.add(`c${colorIndex}`);
             
