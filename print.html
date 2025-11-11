@@ -69,26 +69,46 @@
         align-items: center;
         margin-top: 20px;
     }
-    #qrcode_container {
+    #link_container {
         margin-top: 20px;
-        padding: 15px;
+        padding: 20px;
         background-color: #fff;
-        border-radius: 8px;
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
         align-items: center;
         box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
     }
-    #qrcode_display {
-        margin-bottom: 10px;
-    }
-    #base62_code {
-        font-family: monospace;
-        font-size: 0.9em;
-        color: #333;
-        word-break: break-all;
+    #view_link {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        background: #f9f9f9;
+        font-size: 14px;
         text-align: center;
-        max-width: 200px;
+        word-break: break-all;
+        margin-bottom: 15px;
+        color: #333;
+    }
+    #copy_btn {
+        padding: 10px 20px;
+        background: linear-gradient(145deg, #007bff, #0056b3);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        box-shadow: 0 4px 10px rgba(0,123,255,0.3);
+        transition: all 0.2s;
+    }
+    #copy_btn:hover {
+        background: linear-gradient(145deg, #0056b3, #004085);
+        box-shadow: 0 6px 15px rgba(0,123,255,0.4);
     }
 
     /* Color Classes - Must match draw page */
@@ -109,9 +129,9 @@
   </div>
   <div class="hint">폰을 기울이면 그림이 살아 움직입니다. (데스크톱은 마우스 이동)</div>
 
-  <div id="qrcode_container">
-      <div id="qrcode_display"></div>
-      <div id="base62_code"></div>
+  <div id="link_container">
+      <input id="view_link" readonly>
+      <button id="copy_btn">링크 복사</button>
   </div>
 
   <script>
@@ -151,7 +171,7 @@
         if (b62) {
             base62CodeDiv.textContent = `Code: ${b62}`;
             renderPixelArt(b62);
-            generateQRCode(window.location.href);
+            generateViewLink(window.location.href);
         } else {
             stage.innerHTML = '<p>그림 데이터가 없습니다.</p>';
             base62CodeDiv.textContent = '그림 데이터가 없습니다.';
@@ -218,13 +238,17 @@
         }
     }
 
-    function generateQRCode(url) {
-        qrcodeDisplay.innerHTML = ''; // Clear previous QR code
-        new QRCode(qrcodeDisplay, {
-            text: url,
-            width: 128,
-            height: 128,
-            correctLevel : QRCode.CorrectLevel.H
+    function generateViewLink(currentUrl) {
+        const urlObj = new URL(currentUrl);
+        const b62 = urlObj.searchParams.get('b62');
+        const viewUrl = new URL('view.html', window.location.origin).href + '?b62=' + b62;
+        document.getElementById('view_link').value = viewUrl;
+
+        document.getElementById('copy_btn').addEventListener('click', () => {
+            const linkInput = document.getElementById('view_link');
+            linkInput.select();
+            document.execCommand('copy');
+            alert('링크가 복사되었습니다!');
         });
     }
 

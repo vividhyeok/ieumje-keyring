@@ -317,7 +317,7 @@
             const dataInt = BigInt('0b' + binaryString);
             const encoded = base62.encode(dataInt);
 
-            const url = new URL('view.html', window.location.href).href + '?b62=' + encoded;
+            const url = new URL('print.html', window.location.href).href + '?b62=' + encoded;
             
             $('#share_url').val(url);
             
