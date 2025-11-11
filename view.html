@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pixel Art Viewer</title>
   <link rel="icon" href="data:,">
-  <script src="./lib/jquery-2.1.3.min.js"></script>
-  <script src="./lib/base62.js"></script>
-  <script src="./lib/qrcode.min.js"></script>
   <style>
     :root { --box-size: 120px; --range: 60; } /* 이동 최대 픽셀 */
     html, body { height: 100%; margin: 0; background:#0f1115; color:#e7e9ee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; padding-top: var(--safe-area-inset-top); padding-bottom: var(--safe-area-inset-bottom); box-sizing: border-box; }
@@ -46,7 +43,7 @@
   </div>
   <button id="perm" class="btn" hidden>모션 권한 허용 (iOS)</button>
   <button id="modeBtn" class="mode-btn">중력 모드</button>
-  <div class="hint" id="hint">폰을 기울이면 박스가 반대편으로 살짝 이동합니다. (데스크톱은 마우스 이동)</div>
+  <div class="hint" id="hint">폰을 기울이면 박스가 그 방향으로 빠르게 이동합니다. (데스크톱은 마우스 이동)</div>
 
   <script>
     const box   = document.getElementById('box');
@@ -69,14 +66,12 @@
       (typeof DeviceOrientationEvent !== 'undefined') &&
       (typeof DeviceOrientationEvent.requestPermission === 'function');
 
-    $(document).ready(function() {
+    window.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const b62 = urlParams.get('b62');
 
-        if (b62) {
-            // For now, just show the box
-        } else {
-            // No data
+        if (!b62) {
+            hint.textContent = '데이터가 없습니다. 다른 링크를 확인해주세요.';
         }
 
         if (needIOSPermission) {

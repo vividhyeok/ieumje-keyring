@@ -3,337 +3,271 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>도트 그림 키링 보기</title>
+  <title>도트 그림 키링 프린트</title>
   <link rel="icon" href="data:,">
-  <script src="./lib/jquery-2.1.3.min.js"></script>
   <script src="./lib/base62.js"></script>
-  <script src="./lib/qrcode.min.js"></script>
   <style>
-    :root {
-      --box-size: 120px; /* This will be overridden by pixel size */
-      --range: 30; /* 이동 최대 픽셀 */
-      --pixel-size: 40px; /* Size of each pixel in the grid */
-      --grid-dimension: calc(var(--pixel-size) * 8); /* 8x8 grid */
-      --safe-area-inset-top: env(safe-area-inset-top);
-      --safe-area-inset-bottom: env(safe-area-inset-bottom);
-    }
     html, body {
-      height: 100%;
       margin: 0;
-      background:#0f1115;
-      color:#e7e9ee;
-      font-family: system-ui, sans-serif;
+      padding: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #f2f4f8;
+      color: #1f2933;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #print_container {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(15, 17, 21, 0.18);
+      width: min(92vw, 520px);
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 20px;
+    }
+    #print_container h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #0f1115;
+      text-align: center;
+    }
+    #preview_wrapper {
+      width: 100%;
+      display: flex;
       justify-content: center;
-      overflow: hidden;
-      padding-top: var(--safe-area-inset-top);
-      padding-bottom: var(--safe-area-inset-bottom);
-      box-sizing: border-box;
     }
-    .stage {
-      position: relative;
-      width: var(--grid-dimension);
-      height: var(--grid-dimension);
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      grid-template-rows: repeat(8, 1fr);
-      place-items: center;
-      overflow: hidden;
-      margin-bottom: 20px;
-      border-radius: 12px;
-      box-shadow: 0 20px 50px rgba(0,0,0,.35);
+    #preview_canvas {
+      width: min(100%, 360px);
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+      box-shadow: inset 0 0 0 1px rgba(15,17,21,0.1);
+      background: #ffffff;
     }
-    .pixel {
-      width: var(--pixel-size);
-      height: var(--pixel-size);
-      box-sizing: border-box;
-      will-change: transform;
-      transform: translate3d(0,0,0);
-      border: 1px solid rgba(255,255,255,0.1); /* Subtle border for pixels */
+    #info_panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
     }
-    .hint {
-      position: fixed; left: 12px; bottom: 12px; font-size: 14px; opacity: .7;
+    #view_link_container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-    .btn {
-      padding: 10px 14px; border-radius: 10px; border: 0; cursor: pointer;
-      background:#20242d; color:#e7e9ee; box-shadow: 0 6px 20px rgba(0,0,0,.25);
-      margin-top: 10px;
-    }
-    .btn[hidden]{ display:none; }
-
-    #controls {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-top: 20px;
-    }
-    #link_container {
-        margin-top: 20px;
-        padding: 20px;
-        background-color: #fff;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        max-width: 300px;
-        margin-left: auto;
-        margin-right: auto;
+    #view_link_container label {
+      font-size: 0.9rem;
+      color: #475569;
     }
     #view_link {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #d0d5dd;
+      font-size: 0.92rem;
+      color: #1f2933;
+      background: #f8fafc;
+    }
+    #actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+    }
+    button {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    #btn_print {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+    }
+    #btn_print:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
+    }
+    #btn_save_image, #btn_copy_view {
+      background: #e2e8f0;
+      color: #1f2933;
+      box-shadow: 0 4px 12px rgba(15, 17, 21, 0.12);
+    }
+    #btn_save_image:hover, #btn_copy_view:hover {
+      transform: translateY(-1px);
+      background: #cbd5f5;
+    }
+    #base62_code {
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.85rem;
+      color: #64748b;
+      word-break: break-all;
+      text-align: center;
+    }
+    #empty_state {
+      font-size: 1rem;
+      color: #475569;
+      text-align: center;
+    }
+    @media print {
+      body {
+        background: #ffffff;
+      }
+      #print_container {
+        box-shadow: none;
         width: 100%;
-        padding: 12px;
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
-        background: #f9f9f9;
-        font-size: 14px;
-        text-align: center;
-        word-break: break-all;
-        margin-bottom: 15px;
-        color: #333;
+        padding: 0;
+      }
+      #actions, #view_link_container {
+        display: none !important;
+      }
+      #preview_canvas {
+        width: 100%;
+      }
     }
-    #copy_btn {
-        padding: 10px 20px;
-        background: linear-gradient(145deg, #007bff, #0056b3);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: 600;
-        box-shadow: 0 4px 10px rgba(0,123,255,0.3);
-        transition: all 0.2s;
-    }
-    #copy_btn:hover {
-        background: linear-gradient(145deg, #0056b3, #004085);
-        box-shadow: 0 6px 15px rgba(0,123,255,0.4);
-    }
-
-    /* Color Classes - Must match draw page */
-    .c0 { background-color: #FFFFFF; } /* White */
-    .c1 { background-color: #000000; } /* Black */
-    .c2 { background-color: #FFFF00; } /* Yellow */
-    .c3 { background-color: #FF0000; } /* Red */
-    .c4 { background-color: #0000FF; } /* Blue */
   </style>
 </head>
 <body>
-  <div class="stage" id="stage">
-    <!-- Pixels will be dynamically inserted here -->
-  </div>
-  <div id="controls">
-    <button id="perm" class="btn" hidden>모션 권한 허용 (iOS)</button>
-    <button id="btn_save_image" class="btn">이미지 저장</button>
-  </div>
-  <div class="hint">폰을 기울이면 그림이 살아 움직입니다. (데스크톱은 마우스 이동)</div>
-
-  <div id="link_container">
+  <div id="print_container">
+    <h1>프린트용 키링 이미지</h1>
+    <div id="preview_wrapper">
+      <canvas id="preview_canvas" width="512" height="512"></canvas>
+    </div>
+    <div id="base62_code"></div>
+    <div id="actions">
+      <button id="btn_print">프린트</button>
+      <button id="btn_save_image">이미지 저장</button>
+      <button id="btn_copy_view">뷰 링크 복사</button>
+    </div>
+    <div id="view_link_container" hidden>
+      <label for="view_link">상호작용 화면 (view.html)</label>
       <input id="view_link" readonly>
-      <button id="copy_btn">링크 복사</button>
+    </div>
+    <div id="empty_state" hidden>그림 데이터가 없습니다.</div>
   </div>
 
   <script>
-    const stage = document.getElementById('stage');
-    const permBtn = document.getElementById('perm');
+    const previewCanvas = document.getElementById('preview_canvas');
+    const previewCtx = previewCanvas.getContext('2d');
+    const btnPrint = document.getElementById('btn_print');
     const btnSaveImage = document.getElementById('btn_save_image');
-    const qrcodeDisplay = document.getElementById('qrcode_display');
+    const copyViewBtn = document.getElementById('btn_copy_view');
+    const viewLinkContainer = document.getElementById('view_link_container');
+    const viewLinkInput = document.getElementById('view_link');
     const base62CodeDiv = document.getElementById('base62_code');
+    const emptyState = document.getElementById('empty_state');
 
     const PALETTE_COLORS = [
-        '#FFFFFF', // c0 - White
-        '#000000', // c1 - Black
-        '#FFFF00', // c2 - Yellow
-        '#FF0000', // c3 - Red
-        '#0000FF'  // c4 - Blue
+      '#FFFFFF', // c0 - White
+      '#000000', // c1 - Black
+      '#FFFF00', // c2 - Yellow
+      '#FF0000', // c3 - Red
+      '#0000FF'  // c4 - Blue
     ];
 
-    // 이동 한계(px)
-    const RANGE = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--range')) || 30;
+    let viewUrl = '';
 
-    // 목표 위치와 현재(스무딩용)
-    let targetX = 0, targetY = 0;
-    let curX = 0, curY = 0;
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const b62 = urlParams.get('b62');
 
-    let pixelElements = []; // To store all 64 pixel divs
-    let pixelOffsets = []; // To store individual offsets for each pixel
+      if (b62) {
+        renderPixelArt(b62);
+        base62CodeDiv.textContent = `Base62 코드: ${b62}`;
+        viewUrl = new URL('view.html', window.location.href).href + '?b62=' + b62;
+        viewLinkInput.value = viewUrl;
+        viewLinkContainer.hidden = false;
+        emptyState.hidden = true;
+        setActionsEnabled(true);
+      } else {
+        clearCanvas();
+        base62CodeDiv.textContent = '';
+        viewLinkContainer.hidden = true;
+        viewLinkInput.value = '';
+        emptyState.hidden = false;
+        setActionsEnabled(false);
+      }
 
-    // iOS 권한 버튼 노출 조건
-    const needIOSPermission =
-      (typeof DeviceOrientationEvent !== 'undefined') &&
-      (typeof DeviceOrientationEvent.requestPermission === 'function');
-
-    $(document).ready(function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const b62 = urlParams.get('b62');
-
-        if (b62) {
-            base62CodeDiv.textContent = `Code: ${b62}`;
-            renderPixelArt(b62);
-            generateViewLink(window.location.href);
-        } else {
-            stage.innerHTML = '<p>그림 데이터가 없습니다.</p>';
-            base62CodeDiv.textContent = '그림 데이터가 없습니다.';
-        }
-
-        if (needIOSPermission) {
-            permBtn.hidden = false;
-            permBtn.addEventListener('click', async () => {
-                try {
-                    const st = await DeviceOrientationEvent.requestPermission();
-                    if (st === 'granted') {
-                        permBtn.hidden = true;
-                        startOrientation();
-                    } else {
-                        alert('Motion/Orientation 권한이 거부되었습니다.');
-                    }
-                } catch (e) {
-                    alert('권한 요청 중 오류: ' + e);
-                }
-            });
-        } else {
-            // 안드로이드/데스크톱 등
-            startOrientation();
-        }
-
-        // 데스크톱 마우스 폴백(테스트 편의)
-        stage.addEventListener('mousemove', (e) => {
-            const r = stage.getBoundingClientRect();
-            const nx = (e.clientX - r.left) / r.width;   // 0..1
-            const ny = (e.clientY - r.top)  / r.height;  // 0..1
-            // 마우스는 정방향, 폰은 반대방향이므로 여기선 반대로 맵핑해서 체감 맞춤
-            setTarget((0.5 - nx) * RANGE * 2, (0.5 - ny) * RANGE * 2);
-        });
-
-        btnSaveImage.addEventListener('click', saveImage);
-
-        tick(); // Start the animation loop
+      btnPrint.addEventListener('click', () => window.print());
+      btnSaveImage.addEventListener('click', saveImage);
+      copyViewBtn.addEventListener('click', copyViewLink);
     });
 
+    function setActionsEnabled(enabled) {
+      btnPrint.disabled = !enabled;
+      btnSaveImage.disabled = !enabled;
+      copyViewBtn.disabled = !enabled;
+    }
+
     function renderPixelArt(b62String) {
-        const decodedBigInt = base62.decode(b62String);
-        const binaryString = decodedBigInt.toString(2).padStart(192, '0'); // 64 pixels * 3 bits = 192 bits
+      clearCanvas();
+      const decodedBigInt = base62.decode(b62String);
+      const binaryString = decodedBigInt.toString(2).padStart(192, '0'); // 64 pixels * 3 bits = 192 bits
+      const pixelSize = previewCanvas.width / 8;
 
-        stage.innerHTML = ''; // Clear existing content
-        pixelElements = [];
-        pixelOffsets = [];
-
-        for (let i = 0; i < 64; i++) {
-            const pixel = document.createElement('div');
-            pixel.classList.add('pixel');
-
-            const colorBits = binaryString.substring(i * 3, i * 3 + 3);
-            const colorIndex = parseInt(colorBits, 2);
-            pixel.classList.add(`c${colorIndex}`);
-            
-            pixelElements.push(pixel);
-            stage.appendChild(pixel);
-
-            // Store a random offset for each pixel to make them "alive"
-            pixelOffsets.push({
-                x: (Math.random() - 0.5) * 0.5, // -0.5 to 0.5
-                y: (Math.random() - 0.5) * 0.5
-            });
-        }
+      for (let i = 0; i < 64; i++) {
+        const colorBits = binaryString.substring(i * 3, i * 3 + 3);
+        const colorIndex = parseInt(colorBits, 2);
+        const row = Math.floor(i / 8);
+        const col = i % 8;
+        previewCtx.fillStyle = PALETTE_COLORS[colorIndex] ?? PALETTE_COLORS[0];
+        previewCtx.fillRect(col * pixelSize, row * pixelSize, pixelSize, pixelSize);
+      }
     }
 
-    function generateViewLink(currentUrl) {
-        const urlObj = new URL(currentUrl);
-        const b62 = urlObj.searchParams.get('b62');
-        const viewUrl = new URL('view.html', window.location.origin).href + '?b62=' + b62;
-        document.getElementById('view_link').value = viewUrl;
-
-        document.getElementById('copy_btn').addEventListener('click', () => {
-            const linkInput = document.getElementById('view_link');
-            linkInput.select();
-            document.execCommand('copy');
-            alert('링크가 복사되었습니다!');
-        });
-    }
-
-    function startOrientation() {
-      window.addEventListener('deviceorientation', onOrient, { passive: true });
-    }
-
-    // 기울기 → 좌표 매핑
-    // beta: 앞/뒤(-180..180), gamma: 좌/우(-90..90)
-    function onOrient(e) {
-      let { beta, gamma } = e;
-      if (beta == null || gamma == null) return;
-
-      // 안정적 범위로 클램프
-      const b = clamp(beta, -45, 45);
-      const g = clamp(gamma, -45, 45);
-
-      // "반대편으로" 이동하도록 부호를 뒤집어 매핑
-      // 좌로 기울이면(g<0) 박스는 우(+X)로, 앞으로 기울이면(b>0) 박스는 뒤/위(-Y)로
-      const x = map(g, -45, 45,  RANGE, -RANGE);
-      const y = map(b, -45, 45, RANGE, -RANGE);
-
-      setTarget(x, y);
-    }
-
-    function setTarget(x, y) {
-      // 스테이지 경계 내에서만 움직이게 여유 확인 (박스 크기 고려)
-      const r = stage.getBoundingClientRect();
-      const pixelSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pixel-size')) || 40;
-      const gridDimension = pixelSize * 8; // Total size of the 8x8 grid
-      
-      const maxX = Math.min(RANGE, (r.width - gridDimension) / 2);
-      const maxY = Math.min(RANGE, (r.height - gridDimension) / 2);
-
-      targetX = clamp(x, -maxX, maxX);
-      targetY = clamp(y, -maxY, maxY);
-    }
-
-    // 스무딩 렌더 루프 (부드럽게 따라오게)
-    const SMOOTH = 0.12; // 0~1, 클수록 빠르게
-    function tick() {
-      curX += (targetX - curX) * SMOOTH;
-      curY += (targetY - curY) * SMOOTH;
-
-      pixelElements.forEach((pixel, index) => {
-          const offsetX = pixelOffsets[index].x * RANGE * 0.5; // Smaller individual movement
-          const offsetY = pixelOffsets[index].y * RANGE * 0.5;
-          pixel.style.transform = `translate3d(${curX + offsetX}px, ${curY + offsetY}px, 0)`;
-      });
-      requestAnimationFrame(tick);
+    function clearCanvas() {
+      previewCtx.fillStyle = '#FFFFFF';
+      previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
     }
 
     function saveImage() {
-        const canvas = document.createElement('canvas');
-        const pixelSize = 64; // Each pixel will be 64x64 in the output image
-        canvas.width = pixelSize * 8;
-        canvas.height = pixelSize * 8;
-        const ctx = canvas.getContext('2d');
-
-        // Fill the entire canvas with the c0 color (Black)
-        ctx.fillStyle = PALETTE_COLORS[0]; // PALETTE_COLORS[0] is now Black
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        pixelElements.forEach((pixel, index) => {
-            const colorClass = Array.from(pixel.classList).find(cls => cls.startsWith('c'));
-            const colorIndex = parseInt(colorClass.substring(1));
-
-            // Draw all pixels
-            ctx.fillStyle = PALETTE_COLORS[colorIndex];
-            const row = Math.floor(index / 8);
-            const col = index % 8;
-            ctx.fillRect(col * pixelSize, row * pixelSize, pixelSize, pixelSize);
-        });
-
-        const link = document.createElement('a');
-        link.download = 'pixel_art.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+      const link = document.createElement('a');
+      link.download = 'keyring-art.png';
+      link.href = previewCanvas.toDataURL('image/png');
+      link.click();
     }
 
-    // 유틸
-    function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
-    function map(v, inMin, inMax, outMin, outMax){
-      const t = (v - inMin) / (inMax - inMin);
-      return outMin + t * (outMax - outMin);
+    function copyViewLink() {
+      if (!viewUrl) {
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(viewUrl)
+          .then(() => alert('view.html 링크가 복사되었습니다.'))
+          .catch(fallbackCopyViewLink);
+      } else {
+        fallbackCopyViewLink();
+      }
+    }
+
+    function fallbackCopyViewLink() {
+      viewLinkInput.focus();
+      viewLinkInput.select();
+      viewLinkInput.setSelectionRange(0, viewLinkInput.value.length);
+      try {
+        document.execCommand('copy');
+        alert('view.html 링크가 복사되었습니다.');
+      } catch (err) {
+        alert('복사에 실패했습니다. 직접 선택해서 복사해주세요.');
+      }
     }
   </script>
 </body>

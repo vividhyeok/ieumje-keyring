@@ -109,13 +109,12 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 400px;
+            width: 260px;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             border-radius: 20px;
-            padding: 30px;
+            padding: 24px;
             z-index: 1000;
             text-align: center;
             border: 1px solid rgba(255,255,255,0.2);
@@ -127,49 +126,20 @@
         }
         #cover h2 {
             margin: 0 0 15px 0;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 600;
             color: #333;
         }
         #cover p {
-            margin: 0 0 20px 0;
-            font-size: 16px;
+            margin: 0 0 18px 0;
+            font-size: 15px;
             color: #666;
         }
         #qrcode {
-            margin: 20px auto;
+            margin: 0 auto;
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        #share_url {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 12px 15px;
-            margin-top: 15px;
-            font-size: 14px;
-            text-align: center;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            background: #f9f9f9;
-            color: #333;
-            word-break: break-all;
-            transition: border-color 0.2s;
-        }
-        #share_url:focus {
-            outline: none;
-            border-color: #007bff;
-        }
-        #share_url {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 8px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            word-break: break-all;
         }
         #btn_close {
             position: absolute;
@@ -218,7 +188,6 @@
         <h2>완성!</h2>
         <p>운영자에게 QR코드를 보여주세요.</p>
         <div id="qrcode"></div>
-        <input id="share_url" readonly>
     </div>
 
     <script>
@@ -276,12 +245,6 @@
             $('#btn_close').click(function () {
                 $('#cover').hide();
             });
-            
-            $('#share_url').click(function() {
-                this.select();
-                document.execCommand('copy');
-                alert('링크가 복사되었습니다.');
-            });
         });
 
         function createGrid() {
@@ -318,9 +281,7 @@
             const encoded = base62.encode(dataInt);
 
             const url = new URL('print.html', window.location.href).href + '?b62=' + encoded;
-            
-            $('#share_url').val(url);
-            
+
             $('#qrcode').empty();
             new QRCode(document.getElementById("qrcode"), {
                 text: url,
