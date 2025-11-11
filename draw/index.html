@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>도트 그림 키링 제작</title>
+    <script src="../lib/jquery-2.1.3.min.js"></script>
+    <script src="../lib/base62.js"></script>
+    <script src="../lib/qrcode.min.js"></script>
+    <style>
+        :root {
+            --safe-area-inset-top: env(safe-area-inset-top);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom);
+        }
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            font-size: 16px;
+        }
+        #main_container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding-top: var(--safe-area-inset-top);
+            padding-bottom: var(--safe-area-inset-bottom);
+            box-sizing: border-box;
+        }
+        #title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        #bit_area {
+            width: 90vmin;
+            height: 90vmin;
+            max-width: 400px;
+            max-height: 400px;
+            display: flex;
+            flex-wrap: wrap;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+        .bit_grid {
+            width: 12.5%;
+            height: 12.5%;
+            cursor: pointer;
+            box-sizing: border-box;
+            border: 1px solid #eee;
+        }
+        #control_panel {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #color_panel {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .color_dot {
+            width: 40px;
+            height: 40px;
+            margin: 0 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        .color_dot:hover {
+            transform: scale(1.1);
+        }
+        .color_dot.active {
+            border-color: #007bff;
+            transform: scale(1.15);
+        }
+        .button {
+            display: inline-block;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(to bottom, #007bff, #0056b3);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        .button:hover {
+            background: linear-gradient(to bottom, #0069d9, #0056b3);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .button:active {
+            transform: translateY(1px);
+        }
+        #cover {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        #cover_container {
+            width: 90%;
+            max-width: 350px;
+            padding: 20px;
+            background: #FFF;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            border-radius: 15px;
+            text-align: center;
+            position: relative;
+        }
+        #cover_container h2 { margin-top: 0; }
+        #qrcode { margin: 20px auto; }
+        #share_url {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+        #btn_close {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            width: 30px;
+            height: 30px;
+            font-size: 24px;
+            line-height: 30px;
+            cursor: pointer;
+            color: #888;
+        }
+        /* Color Classes */
+        .c0 { background-color: #000000; } /* Black */
+        .c1 { background-color: #FFFF00; } /* Yellow */
+        .c2 { background-color: #FF0000; } /* Red */
+        .c3 { background-color: #0000FF; } /* Blue */
+        .unfilled {
+            background-color: #e0e0e0; /* Light gray for unfilled */
+            border: 1px dashed #999;
+        }
+    </style>
+</head>
+<body>
+    <div id="main_container">
+        <h1 id="title">도트 그림 키링 제작</h1>
+        <div id="bit_area"></div>
+        <div id="control_panel">
+            <div id="color_panel"></div>
+            <div class="button" id="btn_complete">완료</div>
+        </div>
+    </div>
+
+    <div id="cover">
+        <div id="cover_container">
+            <div id="btn_close">×</div>
+            <h2>완성!</h2>
+            <p>운영자에게 QR코드를 보여주세요.</p>
+            <div id="qrcode"></div>
+            <input id="share_url" readonly>
+        </div>
+    </div>
+
+    <script>
+        const PALETTE = [
+            { name: 'BLACK', class: 'c0' },
+            { name: 'YELLOW', class: 'c1' },
+            { name: 'RED', class: 'c2' },
+            { name: 'BLUE', class: 'c3' }
+        ];
+        let currentColorIndex = 0;
+
+        $(document).ready(function () {
+            createGrid();
+            createPalette();
+
+            $('#bit_area').on("click", '.bit_grid', function () {
+                $(this).data('colorIndex', currentColorIndex);
+                $(this).attr('class', 'bit_grid ' + PALETTE[currentColorIndex].class);
+                $(this).removeClass('unfilled'); // Mark as filled
+            });
+
+            $('#color_panel').on('click', '.color_dot', function() {
+                currentColorIndex = $(this).data('colorIndex');
+                $('#color_panel .color_dot').removeClass('active');
+                $(this).addClass('active');
+            });
+
+            $('#btn_complete').click(function () {
+                generateLink();
+                $('#cover').css('display', 'flex');
+            });
+
+            $('#btn_close').click(function () {
+                $('#cover').hide();
+            });
+            
+            $('#share_url').click(function() {
+                this.select();
+                document.execCommand('copy');
+                alert('링크가 복사되었습니다.');
+            });
+        });
+
+        function createGrid() {
+            const bitArea = $('#bit_area');
+            for (var i = 0; i < 64; i++) {
+                const gridCell = $('<div>')
+                    .addClass('bit_grid unfilled') // Add 'unfilled' class
+                    .data('colorIndex', -1); // -1 indicates not colored
+                bitArea.append(gridCell);
+            }
+        }
+
+        function createPalette() {
+            const colorPanel = $('#color_panel');
+            PALETTE.forEach((color, index) => {
+                const colorDot = $('<div>')
+                    .addClass('color_dot ' + color.class)
+                    .data('colorIndex', index);
+                if (index === currentColorIndex) {
+                    colorDot.addClass('active');
+                }
+                colorPanel.append(colorDot);
+            });
+        }
+
+        function generateLink() {
+            let binaryString = '';
+            let allCellsFilled = true;
+            $('.bit_grid').each(function() {
+                const colorIndex = $(this).data('colorIndex');
+                if (colorIndex === -1) {
+                    allCellsFilled = false;
+                    return false; // Break out of .each loop
+                }
+                binaryString += colorIndex.toString(2).padStart(2, '0');
+            });
+
+            if (!allCellsFilled) {
+                alert('색을 다 채워야 확인 가능합니다.');
+                return;
+            }
+
+            const dataInt = BigInt('0b' + binaryString);
+            const encoded = base62.encode(dataInt);
+
+            const url = new URL('print/index.html', window.location.href).href + '?b62=' + encoded;
+            
+            $('#share_url').val(url);
+            
+            $('#qrcode').empty();
+            new QRCode(document.getElementById("qrcode"), {
+                text: url,
+                width: 200,
+                height: 200,
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+    </script>
+</body>
+</html>
