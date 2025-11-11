@@ -7,8 +7,22 @@
   <link rel="icon" href="data:,">
   <script src="./lib/base62.js"></script>
   <style>
-    :root { --box-size: 120px; --range: 60; } /* 이동 최대 픽셀 */
-    html, body { height: 100%; margin: 0; background:#0f1115; color:#e7e9ee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; padding-top: var(--safe-area-inset-top); padding-bottom: var(--safe-area-inset-bottom); box-sizing: border-box; }
+    :root { --box-size: 140px; --range: 60; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background:#0f1115;
+      color:#e7e9ee;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding-top: var(--safe-area-inset-top);
+      padding-bottom: var(--safe-area-inset-bottom);
+      box-sizing: border-box;
+    }
     .stage {
       position: relative; inset: 0; height: 100%; width: 100%;
       display: grid; place-items: center; overflow: hidden;
@@ -23,22 +37,15 @@
       transform: translate3d(0,0,0);
       display: grid;
       place-items: center;
-      padding: 12px;
+      padding: 14px;
     }
-    .pixel-grid {
+    canvas#pixel_canvas {
       width: 100%;
       height: 100%;
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      grid-template-rows: repeat(8, 1fr);
-      border-radius: 18px;
-      overflow: hidden;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+      border-radius: 16px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.22);
       background: #000;
-    }
-    .pixel-cell {
-      width: 100%;
-      height: 100%;
+      image-rendering: pixelated;
     }
     .hint {
       position: fixed; left: 12px; bottom: 12px; font-size: 14px; opacity: .7;
@@ -59,7 +66,7 @@
 <body>
   <div class="stage" id="stage">
     <div class="box" id="box" aria-label="floating box">
-      <div class="pixel-grid" id="pixel_grid" aria-hidden="true"></div>
+      <canvas id="pixel_canvas" width="256" height="256" aria-hidden="true"></canvas>
     </div>
   </div>
   <button id="perm" class="btn" hidden>모션 권한 허용 (iOS)</button>
@@ -72,7 +79,9 @@
     const permBtn = document.getElementById('perm');
     const modeBtn = document.getElementById('modeBtn');
     const hint = document.getElementById('hint');
-    const pixelGrid = document.getElementById('pixel_grid');
+    const pixelCanvas = document.getElementById('pixel_canvas');
+    const pixelCtx = pixelCanvas.getContext('2d');
+    pixelCtx.imageSmoothingEnabled = false;
 
     const PALETTE_COLORS = [
       '#FFFFFF',
@@ -105,7 +114,7 @@
               renderPixels(b62);
             } catch (err) {
               console.error(err);
-              pixelGrid.innerHTML = '';
+              pixelCtx.clearRect(0, 0, pixelCanvas.width, pixelCanvas.height);
               hint.textContent = '픽셀 데이터를 불러오지 못했습니다.';
             }
         } else {
@@ -153,19 +162,21 @@
         throw new Error('base62 decoder is unavailable.');
       }
 
-      pixelGrid.innerHTML = '';
-
       const decoded = base62.decode(b62String);
       const binaryString = decoded.toString(2).padStart(192, '0');
+      const cellSize = pixelCanvas.width / 8;
+
+      pixelCtx.clearRect(0, 0, pixelCanvas.width, pixelCanvas.height);
 
       for (let i = 0; i < 64; i++) {
         const colorBits = binaryString.substring(i * 3, i * 3 + 3);
         const colorIndex = parseInt(colorBits, 2);
-        const cell = document.createElement('div');
-        cell.className = 'pixel-cell';
-        cell.style.backgroundColor = PALETTE_COLORS[colorIndex] || PALETTE_COLORS[0];
-        pixelGrid.appendChild(cell);
+        const row = Math.floor(i / 8);
+        const col = i % 8;
+        pixelCtx.fillStyle = PALETTE_COLORS[colorIndex] || PALETTE_COLORS[0];
+        pixelCtx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
       }
+
     }
 
     function startOrientation() {
