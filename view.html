@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pixel Art Viewer</title>
   <link rel="icon" href="data:,">
+  <script src="./lib/base62.js"></script>
   <style>
     :root { --box-size: 120px; --range: 60; } /* 이동 최대 픽셀 */
     html, body { height: 100%; margin: 0; background:#0f1115; color:#e7e9ee; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; padding-top: var(--safe-area-inset-top); padding-bottom: var(--safe-area-inset-bottom); box-sizing: border-box; }
@@ -20,6 +21,24 @@
       box-shadow: 0 20px 50px rgba(0,0,0,.35);
       will-change: transform;
       transform: translate3d(0,0,0);
+      display: grid;
+      place-items: center;
+      padding: 12px;
+    }
+    .pixel-grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+      background: #000;
+    }
+    .pixel-cell {
+      width: 100%;
+      height: 100%;
     }
     .hint {
       position: fixed; left: 12px; bottom: 12px; font-size: 14px; opacity: .7;
@@ -39,7 +58,9 @@
 </head>
 <body>
   <div class="stage" id="stage">
-    <div class="box" id="box" aria-label="floating box"></div>
+    <div class="box" id="box" aria-label="floating box">
+      <div class="pixel-grid" id="pixel_grid" aria-hidden="true"></div>
+    </div>
   </div>
   <button id="perm" class="btn" hidden>모션 권한 허용 (iOS)</button>
   <button id="modeBtn" class="mode-btn">중력 모드</button>
@@ -51,6 +72,15 @@
     const permBtn = document.getElementById('perm');
     const modeBtn = document.getElementById('modeBtn');
     const hint = document.getElementById('hint');
+    const pixelGrid = document.getElementById('pixel_grid');
+
+    const PALETTE_COLORS = [
+      '#FFFFFF',
+      '#000000',
+      '#FFFF00',
+      '#FF0000',
+      '#0000FF'
+    ];
 
     // 이동 한계(px)
     const RANGE = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--range')) || 60;
@@ -70,7 +100,15 @@
         const urlParams = new URLSearchParams(window.location.search);
         const b62 = urlParams.get('b62');
 
-        if (!b62) {
+        if (b62) {
+            try {
+              renderPixels(b62);
+            } catch (err) {
+              console.error(err);
+              pixelGrid.innerHTML = '';
+              hint.textContent = '픽셀 데이터를 불러오지 못했습니다.';
+            }
+        } else {
             hint.textContent = '데이터가 없습니다. 다른 링크를 확인해주세요.';
         }
 
@@ -109,6 +147,26 @@
 
         tick();
     });
+
+    function renderPixels(b62String) {
+      if (typeof base62 === 'undefined' || typeof base62.decode !== 'function') {
+        throw new Error('base62 decoder is unavailable.');
+      }
+
+      pixelGrid.innerHTML = '';
+
+      const decoded = base62.decode(b62String);
+      const binaryString = decoded.toString(2).padStart(192, '0');
+
+      for (let i = 0; i < 64; i++) {
+        const colorBits = binaryString.substring(i * 3, i * 3 + 3);
+        const colorIndex = parseInt(colorBits, 2);
+        const cell = document.createElement('div');
+        cell.className = 'pixel-cell';
+        cell.style.backgroundColor = PALETTE_COLORS[colorIndex] || PALETTE_COLORS[0];
+        pixelGrid.appendChild(cell);
+      }
+    }
 
     function startOrientation() {
       window.addEventListener('deviceorientation', onOrient, { passive: true });
