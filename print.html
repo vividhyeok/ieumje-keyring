@@ -175,12 +175,19 @@
     const base62CodeDiv = document.getElementById('base62_code');
     const emptyState = document.getElementById('empty_state');
 
+    const GRID_SIZE = 10;
+    const PIXEL_COUNT = GRID_SIZE * GRID_SIZE;
+    const BITS_PER_PIXEL = 3;
+
     const PALETTE_COLORS = [
       '#FFFFFF', // c0 - White
-      '#000000', // c1 - Black
-      '#FFFF00', // c2 - Yellow
-      '#FF0000', // c3 - Red
-      '#0000FF'  // c4 - Blue
+      '#1F2937', // c1 - Black
+      '#EF4444', // c2 - Red
+      '#F97316', // c3 - Orange
+      '#FACC15', // c4 - Yellow
+      '#22C55E', // c5 - Green
+      '#3B82F6', // c6 - Blue
+      '#8B5CF6'  // c7 - Purple
     ];
 
     let viewUrl = '';
@@ -220,14 +227,15 @@
     function renderPixelArt(b62String) {
       clearCanvas();
       const decodedBigInt = base62.decode(b62String);
-      const binaryString = decodedBigInt.toString(2).padStart(192, '0'); // 64 pixels * 3 bits = 192 bits
-      const pixelSize = previewCanvas.width / 8;
+      const binaryString = decodedBigInt.toString(2).padStart(PIXEL_COUNT * BITS_PER_PIXEL, '0');
+      const pixelSize = previewCanvas.width / GRID_SIZE;
 
-      for (let i = 0; i < 64; i++) {
-        const colorBits = binaryString.substring(i * 3, i * 3 + 3);
+      for (let i = 0; i < PIXEL_COUNT; i++) {
+        const offset = i * BITS_PER_PIXEL;
+        const colorBits = binaryString.substring(offset, offset + BITS_PER_PIXEL);
         const colorIndex = parseInt(colorBits, 2);
-        const row = Math.floor(i / 8);
-        const col = i % 8;
+        const row = Math.floor(i / GRID_SIZE);
+        const col = i % GRID_SIZE;
         previewCtx.fillStyle = PALETTE_COLORS[colorIndex] ?? PALETTE_COLORS[0];
         previewCtx.fillRect(col * pixelSize, row * pixelSize, pixelSize, pixelSize);
       }
