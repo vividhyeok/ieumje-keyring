@@ -28,9 +28,11 @@
     .stage {
       position: relative; inset: 0; height: 100%; width: 100%;
       display: grid; place-items: center; overflow: hidden;
+      perspective: 1400px;
+      perspective-origin: center;
     }
     .box {
-      position: absolute;
+      position: relative;
       width: min(78vmin, 420px);
       height: min(78vmin, 420px);
       border-radius: 28px;
@@ -49,6 +51,7 @@
       width: 100%;
       height: 100%;
       transform-style: preserve-3d;
+      pointer-events: none;
     }
     .pixel {
       position: absolute;
@@ -240,7 +243,8 @@
 
     function updatePixelBasePositions() {
       const rect = pixelCloud.getBoundingClientRect();
-      if (!rect.width) {
+      if (!rect.width || !rect.height) {
+        requestAnimationFrame(updatePixelBasePositions);
         return;
       }
       const cellSize = rect.width / GRID_SIZE;
@@ -252,7 +256,9 @@
         state.el.style.width = `${cellSize}px`;
         state.el.style.height = `${cellSize}px`;
         state.el.style.borderRadius = `${borderRadius}px`;
+        state.el.style.transform = `translate3d(${state.baseX}px, ${state.baseY}px, 0)`;
       });
+
     }
 
     function startOrientation() {

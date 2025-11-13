@@ -299,6 +299,7 @@
         let currentColorIndex = 1;
 
         let isDrawing = false;
+        let activePointerId = null;
 
         $(document).ready(function () {
             createGrid();
@@ -309,24 +310,46 @@
                 $(cell).attr('class', 'bit_grid ' + PALETTE[currentColorIndex].class);
             }
 
-            $('#bit_area').on("mousedown touchstart", '.bit_grid', function (e) {
+            const bitArea = $('#bit_area');
+
+            bitArea.on('pointerdown', '.bit_grid', function (e) {
                 e.preventDefault();
                 isDrawing = true;
+                activePointerId = e.pointerId;
+                if (typeof bitArea[0].setPointerCapture === 'function') {
+                    try {
+                        bitArea[0].setPointerCapture(e.pointerId);
+                    } catch (err) {
+                        // ignore if pointer capture is not supported for this element
+                    }
+                }
                 fillCell(this);
             });
 
-            $('#bit_area').on("mousemove touchmove", function (e) {
+            $(document).on('pointermove', function (e) {
+                if (!isDrawing || e.pointerId !== activePointerId) {
+                    return;
+                }
                 e.preventDefault();
-                if (isDrawing) {
-                    const target = document.elementFromPoint(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY);
-                    if ($(target).hasClass('bit_grid')) {
-                        fillCell(target);
-                    }
+                const target = document.elementFromPoint(e.clientX, e.clientY);
+                if (target && target.classList.contains('bit_grid')) {
+                    fillCell(target);
                 }
             });
 
-            $(document).on("mouseup touchend", function () {
+            $(document).on('pointerup pointercancel pointerleave', function (e) {
+                if (e.pointerId !== activePointerId) {
+                    return;
+                }
                 isDrawing = false;
+                activePointerId = null;
+                if (typeof bitArea[0].releasePointerCapture === 'function') {
+                    try {
+                        bitArea[0].releasePointerCapture(e.pointerId);
+                    } catch (err) {
+                        // ignore release failures
+                    }
+                }
             });
 
             $('#color_panel').on('click', '.color_dot', function() {
