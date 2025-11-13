@@ -127,14 +127,15 @@
       if (b62) {
         try {
           renderPixels(b62);
+          hint.textContent = '폰을 기울이면 픽셀 조각들이 중력을 받아 움직입니다. (데스크톱은 마우스 이동)';
         } catch (err) {
           console.error(err);
-          pixelCloud.innerHTML = '';
-          pixelStates.length = 0;
-          hint.textContent = '픽셀 데이터를 불러오지 못했습니다.';
+          renderFallbackPixels();
+          hint.textContent = '픽셀 데이터를 불러오지 못해 샘플 픽셀 아트를 표시합니다.';
         }
       } else {
-        hint.textContent = '데이터가 없습니다. 다른 링크를 확인해주세요.';
+        renderFallbackPixels();
+        hint.textContent = '샘플 픽셀 아트가 표시됩니다. 폰을 기울여 움직임을 확인하세요!';
       }
 
       if (needIOSPermission) {
@@ -184,13 +185,34 @@
       const decoded = base62.decode(b62String);
       const binaryString = decoded.toString(2).padStart(PIXEL_COUNT * BITS_PER_PIXEL, '0');
 
-      pixelCloud.innerHTML = '';
-      pixelStates.length = 0;
-
+      const colorIndices = [];
       for (let i = 0; i < PIXEL_COUNT; i++) {
         const offset = i * BITS_PER_PIXEL;
         const colorBits = binaryString.substring(offset, offset + BITS_PER_PIXEL);
         const colorIndex = parseInt(colorBits, 2);
+        colorIndices.push(colorIndex);
+      }
+
+      renderColorIndices(colorIndices);
+    }
+
+    function renderFallbackPixels() {
+      const colorIndices = Array.from({ length: PIXEL_COUNT }, (_, idx) => {
+        const row = Math.floor(idx / GRID_SIZE);
+        const col = idx % GRID_SIZE;
+        const stripe = (row + Math.floor(col / 2)) % PALETTE_COLORS.length;
+        return stripe;
+      });
+
+      renderColorIndices(colorIndices);
+    }
+
+    function renderColorIndices(colorIndices) {
+      pixelCloud.innerHTML = '';
+      pixelStates.length = 0;
+
+      for (let i = 0; i < PIXEL_COUNT; i++) {
+        const colorIndex = colorIndices[i];
         const row = Math.floor(i / GRID_SIZE);
         const col = i % GRID_SIZE;
         const pixel = document.createElement('div');
