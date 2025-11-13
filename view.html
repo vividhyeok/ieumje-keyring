@@ -59,6 +59,9 @@
       border-radius: 8px;
       box-shadow: 0 12px 28px rgba(15, 23, 42, 0.35);
       transform: translate3d(0, 0, 0);
+      transform-origin: center;
+      backface-visibility: hidden;
+      will-change: transform, box-shadow;
       transition: background-color 0.18s ease;
     }
     .hint {
@@ -230,8 +233,10 @@
           col,
           baseX: 0,
           baseY: 0,
+          baseZ: (Math.random() - 0.5) * 18,
           offsetX: 0,
           offsetY: 0,
+          offsetZ: 0,
           driftPhase: Math.random() * Math.PI * 2,
           driftSpeed: 0.6 + Math.random() * 0.8,
           mass: 0.6 + Math.random() * 0.5
@@ -256,7 +261,7 @@
         state.el.style.width = `${cellSize}px`;
         state.el.style.height = `${cellSize}px`;
         state.el.style.borderRadius = `${borderRadius}px`;
-        state.el.style.transform = `translate3d(${state.baseX}px, ${state.baseY}px, 0)`;
+        state.el.style.transform = `translate3d(${state.baseX}px, ${state.baseY}px, ${state.baseZ}px)`;
       });
 
     }
@@ -310,17 +315,22 @@
       const normY = clamp(curY, -RANGE, RANGE) / RANGE;
       const floatAmp = mode === 'gravity' ? 4 : 7;
       const influence = mode === 'gravity' ? 22 : -16;
+      const depthInfluence = mode === 'gravity' ? -12 : 18;
 
       pixelStates.forEach((state) => {
         const swayX = Math.sin(time * state.driftSpeed + state.driftPhase) * floatAmp;
         const swayY = Math.cos(time * state.driftSpeed + state.driftPhase + 0.6) * floatAmp;
+        const swayZ = Math.sin(time * state.driftSpeed * 0.9 + state.driftPhase * 0.7) * (mode === 'gravity' ? 1 : 2);
         const targetOffsetX = (normX * influence * state.mass) + swayX;
         const targetOffsetY = (normY * influence * state.mass) + swayY - (mode === 'floating' ? 4 : 0);
+        const targetOffsetZ = (Math.abs(normX) + Math.abs(normY)) * depthInfluence * 0.5 + swayZ;
 
         state.offsetX += (targetOffsetX - state.offsetX) * (0.12 + 0.08 * dt);
         state.offsetY += (targetOffsetY - state.offsetY) * (0.12 + 0.08 * dt);
+        state.offsetZ += (targetOffsetZ - state.offsetZ) * (0.12 + 0.08 * dt);
 
-        state.el.style.transform = `translate3d(${state.baseX + state.offsetX}px, ${state.baseY + state.offsetY}px, 0)`;
+        const zPos = state.baseZ + state.offsetZ;
+        state.el.style.transform = `translate3d(${state.baseX + state.offsetX}px, ${state.baseY + state.offsetY}px, ${zPos}px)`;
         state.el.style.boxShadow = `0 ${18 + state.offsetY * 0.2}px ${32 + Math.abs(state.offsetX) * 0.3}px rgba(15, 23, 42, 0.35)`;
       });
 
