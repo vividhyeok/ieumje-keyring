@@ -55,13 +55,13 @@
         }
 
         #bit_area {
-            width: min(88vw, 90vmin);
-            height: min(88vw, 90vmin);
-            max-width: 360px;
-            max-height: 360px;
+            width: min(90vw, 92vmin);
+            height: min(90vw, 92vmin);
+            max-width: 420px;
+            max-height: 420px;
             display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
             border-radius: 24px;
             background: #ffffff;
             box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
@@ -247,10 +247,13 @@
         }
 
         .c0 { background-color: #FFFFFF; }
-        .c1 { background-color: #000000; }
-        .c2 { background-color: #FFFF00; }
-        .c3 { background-color: #FF0000; }
-        .c4 { background-color: #0000FF; }
+        .c1 { background-color: #1F2937; }
+        .c2 { background-color: #EF4444; }
+        .c3 { background-color: #F97316; }
+        .c4 { background-color: #FACC15; }
+        .c5 { background-color: #22C55E; }
+        .c6 { background-color: #3B82F6; }
+        .c7 { background-color: #8B5CF6; }
 
         @media (min-width: 640px) {
             #main_container {
@@ -268,7 +271,7 @@
 </head>
 <body>
     <div id="main_container">
-        <div id="bit_area" aria-label="8x8 픽셀 그리드"></div>
+        <div id="bit_area" aria-label="10x10 픽셀 그리드"></div>
         <div id="control_panel">
             <div id="color_panel" aria-label="색상 선택"></div>
             <button class="button" id="btn_complete" type="button">완료</button>
@@ -285,12 +288,19 @@
     </div>
 
     <script>
+        const GRID_SIZE = 10;
+        const PIXEL_COUNT = GRID_SIZE * GRID_SIZE;
+        const BITS_PER_PIXEL = 3;
+
         const PALETTE = [
             { name: 'WHITE', class: 'c0' },
             { name: 'BLACK', class: 'c1' },
-            { name: 'YELLOW', class: 'c2' },
-            { name: 'RED', class: 'c3' },
-            { name: 'BLUE', class: 'c4' }
+            { name: 'RED', class: 'c2' },
+            { name: 'ORANGE', class: 'c3' },
+            { name: 'YELLOW', class: 'c4' },
+            { name: 'GREEN', class: 'c5' },
+            { name: 'BLUE', class: 'c6' },
+            { name: 'PURPLE', class: 'c7' }
         ];
         let currentColorIndex = 1;
 
@@ -343,7 +353,8 @@
 
         function createGrid() {
             const bitArea = $('#bit_area');
-            for (var i = 0; i < 64; i++) {
+            bitArea.empty();
+            for (let i = 0; i < PIXEL_COUNT; i++) {
                 const gridCell = $('<div>')
                     .addClass('bit_grid c0') // Start with white
                     .data('colorIndex', 0); // 0 indicates white
@@ -368,7 +379,7 @@
             let binaryString = '';
             $('.bit_grid').each(function() {
                 const colorIndex = $(this).data('colorIndex');
-                binaryString += colorIndex.toString(2).padStart(3, '0');
+                binaryString += colorIndex.toString(2).padStart(BITS_PER_PIXEL, '0');
             });
 
             const dataInt = BigInt('0b' + binaryString);
