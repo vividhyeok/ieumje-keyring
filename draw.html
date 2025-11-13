@@ -91,22 +91,17 @@
 
         #color_panel {
             width: 100%;
-            display: flex;
+            max-width: 420px;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 16px;
-            padding: 4px 2px;
-            justify-content: center;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        #color_panel::-webkit-scrollbar {
-            display: none;
+            padding: 8px 2px;
+            justify-items: center;
         }
 
         .color_dot {
-            flex: 0 0 54px;
-            width: 54px;
-            height: 54px;
+            width: clamp(44px, 18vw, 54px);
+            height: clamp(44px, 18vw, 54px);
             border-radius: 50%;
             cursor: pointer;
             border: 3px solid transparent;
@@ -262,7 +257,6 @@
             }
 
             .color_dot {
-                flex-basis: 60px;
                 width: 60px;
                 height: 60px;
             }
