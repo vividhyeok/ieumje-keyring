@@ -43,10 +43,11 @@
     }
     #preview_canvas {
       width: min(100%, 360px);
-      aspect-ratio: 1 / 1;
+      aspect-ratio: 34 / 44;
       border-radius: 16px;
       box-shadow: inset 0 0 0 1px rgba(15,17,21,0.1);
       background: #ffffff;
+      image-rendering: pixelated;
     }
     #info_panel {
       width: 100%;
@@ -149,7 +150,7 @@
   <div id="print_container">
     <h1>프린트용 키링 이미지</h1>
     <div id="preview_wrapper">
-      <canvas id="preview_canvas" width="512" height="512"></canvas>
+      <canvas id="preview_canvas" width="680" height="880"></canvas>
     </div>
     <div id="base62_code"></div>
     <div id="actions">
@@ -226,9 +227,28 @@
 
     function renderPixelArt(b62String) {
       clearCanvas();
+
       const decodedBigInt = base62.decode(b62String);
       const binaryString = decodedBigInt.toString(2).padStart(PIXEL_COUNT * BITS_PER_PIXEL, '0');
-      const pixelSize = previewCanvas.width / GRID_SIZE;
+
+      const CARD_WIDTH_CM = 3.4;
+      const PHOTO_SIZE_CM = 3.0;
+      const SIDE_MARGIN_CM = (CARD_WIDTH_CM - PHOTO_SIZE_CM) / 2; // 0.2cm 좌우 여백
+      const TOP_MARGIN_CM = 0.2;
+      const pxPerCm = previewCanvas.width / CARD_WIDTH_CM;
+
+      const photoSizePx = PHOTO_SIZE_CM * pxPerCm;
+      const photoX = SIDE_MARGIN_CM * pxPerCm;
+      const photoY = TOP_MARGIN_CM * pxPerCm;
+      const bottomAreaTop = photoY + photoSizePx;
+
+      previewCtx.save();
+      previewCtx.fillStyle = '#f8fafc';
+      previewCtx.fillRect(photoX, photoY, photoSizePx, photoSizePx);
+      previewCtx.restore();
+
+      previewCtx.imageSmoothingEnabled = false;
+      const pixelSize = photoSizePx / GRID_SIZE;
 
       for (let i = 0; i < PIXEL_COUNT; i++) {
         const offset = i * BITS_PER_PIXEL;
@@ -237,13 +257,76 @@
         const row = Math.floor(i / GRID_SIZE);
         const col = i % GRID_SIZE;
         previewCtx.fillStyle = PALETTE_COLORS[colorIndex] ?? PALETTE_COLORS[0];
-        previewCtx.fillRect(col * pixelSize, row * pixelSize, pixelSize, pixelSize);
+        previewCtx.fillRect(
+          photoX + col * pixelSize,
+          photoY + row * pixelSize,
+          pixelSize,
+          pixelSize
+        );
       }
+
+      drawPolaroidGuides({
+        photoX,
+        photoY,
+        photoSizePx,
+        pxPerCm,
+        bottomAreaTop
+      });
     }
 
     function clearCanvas() {
       previewCtx.fillStyle = '#FFFFFF';
       previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+    }
+
+    function drawPolaroidGuides({ photoX, photoY, photoSizePx, pxPerCm, bottomAreaTop }) {
+      const strokeWidth = Math.max(1, pxPerCm * 0.03);
+      const dashSize = Math.max(4, pxPerCm * 0.1);
+
+      previewCtx.save();
+      previewCtx.strokeStyle = 'rgba(148, 163, 184, 0.38)';
+      previewCtx.lineWidth = pxPerCm * 0.02;
+      const guideInset = pxPerCm * 0.04;
+      const guideRadius = pxPerCm * 0.08;
+      const guideX = photoX - guideInset;
+      const guideY = photoY - guideInset;
+      const guideW = photoSizePx + guideInset * 2;
+      const guideH = photoSizePx + guideInset * 2;
+
+      previewCtx.beginPath();
+      drawRoundedRect(previewCtx, guideX, guideY, guideW, guideH, guideRadius);
+      previewCtx.stroke();
+      previewCtx.restore();
+
+      previewCtx.save();
+      previewCtx.strokeStyle = '#2563eb';
+      previewCtx.lineWidth = strokeWidth;
+      previewCtx.setLineDash([dashSize, dashSize]);
+      previewCtx.strokeRect(photoX, photoY, photoSizePx, photoSizePx);
+      previewCtx.restore();
+
+      previewCtx.save();
+      previewCtx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
+      previewCtx.lineWidth = Math.max(1, pxPerCm * 0.015);
+      previewCtx.beginPath();
+      previewCtx.moveTo(photoX, bottomAreaTop);
+      previewCtx.lineTo(previewCanvas.width - photoX, bottomAreaTop);
+      previewCtx.stroke();
+      previewCtx.restore();
+    }
+
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + width - r, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+      ctx.lineTo(x + width, y + height - r);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      ctx.lineTo(x + r, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
     }
 
     function saveImage() {
