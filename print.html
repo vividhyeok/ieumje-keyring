@@ -54,15 +54,46 @@
       text-align: center;
       font-size: 0.85rem;
       color: rgba(226, 232, 240, 0.9);
-      word-break: break-all;
       line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
     }
-    #view_link_container a {
+    #view_link_row {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+    }
+    #view_link {
       color: #facc15;
       text-decoration: none;
+      word-break: break-all;
+      flex: 1;
     }
-    #view_link_container a:hover {
+    #view_link:hover {
       text-decoration: underline;
+    }
+    #btn_copy_view {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(148, 163, 184, 0.2);
+      color: #e2e8f0;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      white-space: nowrap;
+    }
+    #btn_copy_view:hover:not(:disabled) {
+      background: rgba(248, 250, 252, 0.35);
+      transform: translateY(-1px);
+    }
+    #btn_copy_view:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
     button {
       padding: 12px 22px;
@@ -132,7 +163,10 @@
     </div>
     <div id="view_link_container" hidden>
       <div>상호작용 화면 주소</div>
-      <a id="view_link" target="_blank" rel="noopener"></a>
+      <div id="view_link_row">
+        <a id="view_link" target="_blank" rel="noopener"></a>
+        <button id="btn_copy_view" type="button">주소 복사</button>
+      </div>
     </div>
     <div id="empty_state" hidden>그림 데이터가 없습니다.</div>
   </div>
