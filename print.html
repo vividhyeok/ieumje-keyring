@@ -49,6 +49,21 @@
       justify-content: center;
       width: 100%;
     }
+    #view_link_container {
+      width: 100%;
+      text-align: center;
+      font-size: 0.85rem;
+      color: rgba(226, 232, 240, 0.9);
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    #view_link_container a {
+      color: #facc15;
+      text-decoration: none;
+    }
+    #view_link_container a:hover {
+      text-decoration: underline;
+    }
     button {
       padding: 12px 22px;
       border-radius: 999px;
@@ -115,6 +130,10 @@
       <button id="btn_print">프린트</button>
       <button id="btn_save_image">이미지 저장</button>
     </div>
+    <div id="view_link_container" hidden>
+      <div>상호작용 화면 주소</div>
+      <a id="view_link" target="_blank" rel="noopener"></a>
+    </div>
     <div id="empty_state" hidden>그림 데이터가 없습니다.</div>
   </div>
 
@@ -124,6 +143,8 @@
     const btnPrint = document.getElementById('btn_print');
     const btnSaveImage = document.getElementById('btn_save_image');
     const emptyState = document.getElementById('empty_state');
+  const viewLinkContainer = document.getElementById('view_link_container');
+  const viewLinkAnchor = document.getElementById('view_link');
 
     const GRID_SIZE = 10;
     const PIXEL_COUNT = GRID_SIZE * GRID_SIZE;
@@ -158,6 +179,8 @@
       '#8B5CF6'  // c7 - Purple
     ];
 
+  let viewUrl = '';
+
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const b62 = urlParams.get('b62');
@@ -166,10 +189,18 @@
 
       if (b62) {
         renderPixelArt(b62);
+        viewUrl = new URL('view.html', window.location.href).href + '?b62=' + b62;
+        viewLinkAnchor.textContent = viewUrl;
+        viewLinkAnchor.href = viewUrl;
+        viewLinkContainer.hidden = false;
         emptyState.hidden = true;
         setActionsEnabled(true);
       } else {
         clearCanvas();
+        viewUrl = '';
+        viewLinkAnchor.textContent = '';
+        viewLinkAnchor.removeAttribute('href');
+        viewLinkContainer.hidden = true;
         emptyState.hidden = false;
         setActionsEnabled(false);
       }
