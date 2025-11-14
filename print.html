@@ -36,7 +36,7 @@
     }
     #preview_canvas {
       width: min(100%, 480px);
-      aspect-ratio: 120 / 177.6;
+      aspect-ratio: 110 / 162.8;
       display: block;
       background: transparent;
       border: none;
@@ -100,8 +100,8 @@
         display: none !important;
       }
       #preview_canvas {
-        width: 12cm;
-        height: 17.76cm;
+        width: 11cm;
+        height: 16.28cm;
       }
     }
   </style>
@@ -109,7 +109,7 @@
 <body>
   <div id="print_container">
     <div id="preview_wrapper">
-  <canvas id="preview_canvas" width="1417" height="2098"></canvas>
+      <canvas id="preview_canvas" width="1299" height="1923"></canvas>
     </div>
     <div id="actions">
       <button id="btn_print">프린트</button>
@@ -129,8 +129,8 @@
     const PIXEL_COUNT = GRID_SIZE * GRID_SIZE;
     const BITS_PER_PIXEL = 3;
     const MM_PER_INCH = 25.4;
-    const PRINT_DPI = 300;
-    const SCALE_FACTOR = 1.2;
+  const PRINT_DPI = 300;
+  const SCALE_FACTOR = 1.1;
     const BASE_CARD_MM = { width: 100, height: 148 };
     const BASE_PHOTO_MM = { width: 35, height: 45 };
     const CARD_MM = {
@@ -285,7 +285,7 @@
 
     function saveImage() {
       const link = document.createElement('a');
-      link.download = 'keyring-print-120.png';
+  link.download = 'keyring-print-110.png';
       link.href = previewCanvas.toDataURL('image/png');
       link.click();
     }
