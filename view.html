@@ -73,11 +73,6 @@
       background:#20242d; color:#e7e9ee; box-shadow: 0 6px 20px rgba(0,0,0,.25);
     }
     .btn[hidden]{ display:none; }
-    .mode-btn {
-      position: fixed; top: 12px; left: 12px;
-      padding: 10px 14px; border-radius: 10px; border: 0; cursor: pointer;
-      background:#20242d; color:#e7e9ee; box-shadow: 0 6px 20px rgba(0,0,0,.25);
-    }
   </style>
 </head>
 <body>
@@ -87,8 +82,7 @@
     </div>
   </div>
   <button id="perm" class="btn" hidden>모션 권한 허용 (iOS)</button>
-  <button id="modeBtn" class="mode-btn">중력 모드</button>
-  <div class="hint" id="hint">폰을 기울이면 픽셀 조각들이 중력을 받아 움직입니다. (데스크톱은 마우스 이동)</div>
+  <div class="hint" id="hint">폰을 기울이면 픽셀 조각들이 중력을 받아 움직입니다. 손가락으로 스와이프하면 흩어졌다 돌아옵니다. (데스크톱은 마우스 이동)</div>
 
   <script>
     const GRID_SIZE = 10;
@@ -110,17 +104,26 @@
     const stage = document.getElementById('stage');
     const pixelCloud = document.getElementById('pixel_cloud');
     const permBtn = document.getElementById('perm');
-    const modeBtn = document.getElementById('modeBtn');
     const hint = document.getElementById('hint');
 
     const pixelStates = [];
 
     const RANGE = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--range')) || 80;
+    const GRAVITY_SMOOTHING = 0.08;
+    const FLOAT_AMPLITUDE = 4;
+    const GRAVITY_INFLUENCE = 22;
+    const DEPTH_INFLUENCE = -12;
+    const SCATTER_DURATION = 1200;
+    const SCATTER_MAGNITUDE = 140;
+    const SWIPE_DISTANCE = 40;
+    const SWIPE_TIME = 600;
 
     let targetX = 0, targetY = 0;
     let curX = 0, curY = 0;
-    let mode = 'gravity';
     let lastTime = 0;
+    let scatterActive = false;
+    let scatterElapsed = 0;
+    let swipeTracker = null;
 
     const needIOSPermission =
       (typeof DeviceOrientationEvent !== 'undefined') &&
@@ -133,15 +136,15 @@
       if (b62) {
         try {
           renderPixels(b62);
-          hint.textContent = '폰을 기울이면 픽셀 조각들이 중력을 받아 움직입니다. (데스크톱은 마우스 이동)';
+          hint.textContent = '폰을 기울이면 픽셀 조각들이 중력을 받아 움직입니다. 손가락으로 스와이프하면 흩어졌다 돌아옵니다. (데스크톱은 마우스 이동)';
         } catch (err) {
           console.error(err);
           renderFallbackPixels();
-          hint.textContent = '픽셀 데이터를 불러오지 못해 샘플 픽셀 아트를 표시합니다.';
+          hint.textContent = '픽셀 데이터를 불러오지 못해 샘플 픽셀 아트를 표시합니다. 폰을 기울이거나 스와이프해보세요.';
         }
       } else {
         renderFallbackPixels();
-        hint.textContent = '샘플 픽셀 아트가 표시됩니다. 폰을 기울여 움직임을 확인하세요!';
+        hint.textContent = '샘플 픽셀 아트가 표시됩니다. 폰을 기울이거나 스와이프해 움직임을 확인하세요!';
       }
 
       if (needIOSPermission) {
@@ -170,13 +173,9 @@
         setTarget((0.5 - nx) * RANGE * 2, (0.5 - ny) * RANGE * 2);
       });
 
-      modeBtn.addEventListener('click', () => {
-        mode = mode === 'gravity' ? 'floating' : 'gravity';
-        modeBtn.textContent = mode === 'gravity' ? '중력 모드' : '플로팅 모드';
-        hint.textContent = mode === 'gravity'
-          ? '폰을 기울이면 픽셀 조각들이 중력을 받아 움직입니다.'
-          : '폰을 기울이면 픽셀 조각들이 반대로 살짝 떠다닙니다.';
-      });
+      stage.addEventListener('pointerdown', onPointerDown);
+      stage.addEventListener('pointerup', onPointerUp);
+      stage.addEventListener('pointercancel', onPointerCancel);
 
       window.addEventListener('resize', updatePixelBasePositions);
 
@@ -239,7 +238,10 @@
           offsetZ: 0,
           driftPhase: Math.random() * Math.PI * 2,
           driftSpeed: 0.6 + Math.random() * 0.8,
-          mass: 0.6 + Math.random() * 0.5
+          mass: 0.6 + Math.random() * 0.5,
+          scatterOffsetX: 0,
+          scatterOffsetY: 0,
+          scatterOffsetZ: 0
         });
       }
 
@@ -277,15 +279,9 @@
       const b = clamp(beta, -45, 45);
       const g = clamp(gamma, -45, 45);
 
-      if (mode === 'gravity') {
-        const x = map(g, -45, 45, RANGE, -RANGE);
-        const y = map(b, -45, 45, RANGE, -RANGE);
-        setTarget(x, y);
-      } else {
-        const x = map(g, -45, 45, RANGE * 0.35, -RANGE * 0.35);
-        const y = map(b, -45, 45, RANGE * 0.35, -RANGE * 0.35);
-        setTarget(clamp(-x, -RANGE * 0.5, RANGE * 0.5), clamp(-y, -RANGE * 0.5, RANGE * 0.5));
-      }
+      const x = map(g, -45, 45, RANGE, -RANGE);
+      const y = map(b, -45, 45, RANGE, -RANGE);
+      setTarget(x, y);
     }
 
     function setTarget(x, y) {
@@ -302,9 +298,8 @@
       lastTime = now;
       const dt = Math.min(delta / 16.666, 1);
 
-      const smoothing = mode === 'gravity' ? 0.08 : 0.04;
-      curX += (targetX - curX) * smoothing;
-      curY += (targetY - curY) * smoothing;
+      curX += (targetX - curX) * GRAVITY_SMOOTHING;
+      curY += (targetY - curY) * GRAVITY_SMOOTHING;
 
       const rotX = clamp(curY, -RANGE, RANGE) / RANGE * 10;
       const rotY = clamp(-curX, -RANGE, RANGE) / RANGE * 10;
@@ -313,28 +308,91 @@
       const time = now / 1000;
       const normX = clamp(curX, -RANGE, RANGE) / RANGE;
       const normY = clamp(curY, -RANGE, RANGE) / RANGE;
-      const floatAmp = mode === 'gravity' ? 4 : 7;
-      const influence = mode === 'gravity' ? 22 : -16;
-      const depthInfluence = mode === 'gravity' ? -12 : 18;
+      let scatterFactor = 0;
+      if (scatterActive) {
+        scatterElapsed += delta;
+        const t = Math.min(scatterElapsed / SCATTER_DURATION, 1);
+        scatterFactor = Math.sin(t * Math.PI);
+        if (t >= 1) {
+          scatterActive = false;
+        }
+      }
 
       pixelStates.forEach((state) => {
-        const swayX = Math.sin(time * state.driftSpeed + state.driftPhase) * floatAmp;
-        const swayY = Math.cos(time * state.driftSpeed + state.driftPhase + 0.6) * floatAmp;
-        const swayZ = Math.sin(time * state.driftSpeed * 0.9 + state.driftPhase * 0.7) * (mode === 'gravity' ? 1 : 2);
-        const targetOffsetX = (normX * influence * state.mass) + swayX;
-        const targetOffsetY = (normY * influence * state.mass) + swayY - (mode === 'floating' ? 4 : 0);
-        const targetOffsetZ = (Math.abs(normX) + Math.abs(normY)) * depthInfluence * 0.5 + swayZ;
+        const swayX = Math.sin(time * state.driftSpeed + state.driftPhase) * FLOAT_AMPLITUDE;
+        const swayY = Math.cos(time * state.driftSpeed + state.driftPhase + 0.6) * FLOAT_AMPLITUDE;
+        const swayZ = Math.sin(time * state.driftSpeed * 0.9 + state.driftPhase * 0.7);
+        const targetOffsetX = (normX * GRAVITY_INFLUENCE * state.mass) + swayX;
+        const targetOffsetY = (normY * GRAVITY_INFLUENCE * state.mass) + swayY;
+        const targetOffsetZ = (Math.abs(normX) + Math.abs(normY)) * DEPTH_INFLUENCE * 0.5 + swayZ;
 
         state.offsetX += (targetOffsetX - state.offsetX) * (0.12 + 0.08 * dt);
         state.offsetY += (targetOffsetY - state.offsetY) * (0.12 + 0.08 * dt);
         state.offsetZ += (targetOffsetZ - state.offsetZ) * (0.12 + 0.08 * dt);
 
-        const zPos = state.baseZ + state.offsetZ;
-        state.el.style.transform = `translate3d(${state.baseX + state.offsetX}px, ${state.baseY + state.offsetY}px, ${zPos}px)`;
-        state.el.style.boxShadow = `0 ${18 + state.offsetY * 0.2}px ${32 + Math.abs(state.offsetX) * 0.3}px rgba(15, 23, 42, 0.35)`;
+        const scatterX = state.scatterOffsetX * scatterFactor;
+        const scatterY = state.scatterOffsetY * scatterFactor;
+        const scatterZ = state.scatterOffsetZ * scatterFactor;
+        const finalX = state.baseX + state.offsetX + scatterX;
+        const finalY = state.baseY + state.offsetY + scatterY;
+        const finalZ = state.baseZ + state.offsetZ + scatterZ;
+
+        state.el.style.transform = `translate3d(${finalX}px, ${finalY}px, ${finalZ}px)`;
+        state.el.style.boxShadow = `0 ${18 + (state.offsetY + scatterY) * 0.2}px ${32 + Math.abs(state.offsetX + scatterX) * 0.3}px rgba(15, 23, 42, 0.35)`;
       });
 
       requestAnimationFrame(tick);
+    }
+
+    function onPointerDown(e) {
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+      swipeTracker = {
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        time: performance.now()
+      };
+      if (stage.setPointerCapture) {
+        stage.setPointerCapture(e.pointerId);
+      }
+    }
+
+    function onPointerUp(e) {
+      if (!swipeTracker || swipeTracker.id !== e.pointerId) return;
+      const dx = e.clientX - swipeTracker.x;
+      const dy = e.clientY - swipeTracker.y;
+      const distance = Math.hypot(dx, dy);
+      const duration = performance.now() - swipeTracker.time;
+
+      if (distance >= SWIPE_DISTANCE && duration <= SWIPE_TIME) {
+        triggerScatter();
+      }
+
+      swipeTracker = null;
+      if (stage.releasePointerCapture) {
+        stage.releasePointerCapture(e.pointerId);
+      }
+    }
+
+    function onPointerCancel(e) {
+      if (swipeTracker && swipeTracker.id === e.pointerId) {
+        swipeTracker = null;
+      }
+      if (stage.releasePointerCapture) {
+        stage.releasePointerCapture(e.pointerId);
+      }
+    }
+
+    function triggerScatter() {
+      scatterActive = true;
+      scatterElapsed = 0;
+      pixelStates.forEach((state) => {
+        const magnitude = SCATTER_MAGNITUDE * (0.5 + Math.random());
+        const angle = Math.random() * Math.PI * 2;
+        state.scatterOffsetX = Math.cos(angle) * magnitude;
+        state.scatterOffsetY = Math.sin(angle) * magnitude;
+        state.scatterOffsetZ = (Math.random() - 0.5) * magnitude * 0.7;
+      });
     }
 
     function clamp(v, min, max) {
