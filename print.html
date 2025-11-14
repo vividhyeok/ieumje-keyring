@@ -40,13 +40,17 @@
       width: 100%;
       display: flex;
       justify-content: center;
+      padding: 18px;
+      border-radius: 18px;
+      background: #e2e8f0;
+      box-shadow: inset 0 0 0 1px rgba(15,17,21,0.05);
     }
     #preview_canvas {
       width: min(100%, 360px);
       aspect-ratio: 34 / 44;
-      border-radius: 16px;
-      box-shadow: inset 0 0 0 1px rgba(15,17,21,0.1);
-      background: #ffffff;
+      display: block;
+      background: transparent;
+      border: none;
       image-rendering: pixelated;
     }
     #info_panel {
@@ -141,7 +145,8 @@
         display: none !important;
       }
       #preview_canvas {
-        width: 100%;
+        width: 3.4cm;
+        height: 4.4cm;
       }
     }
   </style>
@@ -232,15 +237,15 @@
       const binaryString = decodedBigInt.toString(2).padStart(PIXEL_COUNT * BITS_PER_PIXEL, '0');
 
       const CARD_WIDTH_CM = 3.4;
+      const CARD_HEIGHT_CM = 4.4;
       const PHOTO_SIZE_CM = 3.0;
-      const SIDE_MARGIN_CM = (CARD_WIDTH_CM - PHOTO_SIZE_CM) / 2; // 0.2cm 좌우 여백
-      const TOP_MARGIN_CM = 0.2;
       const pxPerCm = previewCanvas.width / CARD_WIDTH_CM;
 
       const photoSizePx = PHOTO_SIZE_CM * pxPerCm;
-      const photoX = SIDE_MARGIN_CM * pxPerCm;
-      const photoY = TOP_MARGIN_CM * pxPerCm;
-      const bottomAreaTop = photoY + photoSizePx;
+      const sideMarginPx = ((CARD_WIDTH_CM - PHOTO_SIZE_CM) / 2) * pxPerCm;
+      const verticalMarginPx = ((CARD_HEIGHT_CM - PHOTO_SIZE_CM) / 2) * pxPerCm;
+      const photoX = sideMarginPx;
+      const photoY = verticalMarginPx;
 
       previewCtx.save();
       previewCtx.fillStyle = '#f8fafc';
@@ -265,12 +270,11 @@
         );
       }
 
-      drawPolaroidGuides({
+      drawPrintGuides({
         photoX,
         photoY,
         photoSizePx,
-        pxPerCm,
-        bottomAreaTop
+        pxPerCm
       });
     }
 
@@ -279,54 +283,28 @@
       previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
     }
 
-    function drawPolaroidGuides({ photoX, photoY, photoSizePx, pxPerCm, bottomAreaTop }) {
-      const strokeWidth = Math.max(1, pxPerCm * 0.03);
-      const dashSize = Math.max(4, pxPerCm * 0.1);
+    function drawPrintGuides({ photoX, photoY, photoSizePx, pxPerCm }) {
+      const borderStroke = Math.max(2, pxPerCm * 0.05);
+      const dashSize = Math.max(6, pxPerCm * 0.25);
+      const borderInset = borderStroke / 2;
 
       previewCtx.save();
-      previewCtx.strokeStyle = 'rgba(148, 163, 184, 0.38)';
-      previewCtx.lineWidth = pxPerCm * 0.02;
-      const guideInset = pxPerCm * 0.04;
-      const guideRadius = pxPerCm * 0.08;
-      const guideX = photoX - guideInset;
-      const guideY = photoY - guideInset;
-      const guideW = photoSizePx + guideInset * 2;
-      const guideH = photoSizePx + guideInset * 2;
-
-      previewCtx.beginPath();
-      drawRoundedRect(previewCtx, guideX, guideY, guideW, guideH, guideRadius);
-      previewCtx.stroke();
+      previewCtx.strokeStyle = '#1d4ed8';
+      previewCtx.lineWidth = borderStroke;
+      previewCtx.setLineDash([dashSize, dashSize * 0.8]);
+      previewCtx.strokeRect(
+        borderInset,
+        borderInset,
+        previewCanvas.width - borderStroke,
+        previewCanvas.height - borderStroke
+      );
       previewCtx.restore();
 
       previewCtx.save();
-      previewCtx.strokeStyle = '#2563eb';
-      previewCtx.lineWidth = strokeWidth;
-      previewCtx.setLineDash([dashSize, dashSize]);
+      previewCtx.strokeStyle = 'rgba(15, 17, 21, 0.08)';
+      previewCtx.lineWidth = Math.max(1, pxPerCm * 0.02);
       previewCtx.strokeRect(photoX, photoY, photoSizePx, photoSizePx);
       previewCtx.restore();
-
-      previewCtx.save();
-      previewCtx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
-      previewCtx.lineWidth = Math.max(1, pxPerCm * 0.015);
-      previewCtx.beginPath();
-      previewCtx.moveTo(photoX, bottomAreaTop);
-      previewCtx.lineTo(previewCanvas.width - photoX, bottomAreaTop);
-      previewCtx.stroke();
-      previewCtx.restore();
-    }
-
-    function drawRoundedRect(ctx, x, y, width, height, radius) {
-      const r = Math.min(radius, width / 2, height / 2);
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + width - r, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-      ctx.lineTo(x + width, y + height - r);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-      ctx.lineTo(x + r, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
     }
 
     function saveImage() {
