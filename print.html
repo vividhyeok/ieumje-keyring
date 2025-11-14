@@ -12,73 +12,35 @@
       padding: 0;
       min-height: 100vh;
       font-family: "Segoe UI", system-ui, sans-serif;
-      background: #f2f4f8;
-      color: #1f2933;
+      background: #111827;
       display: flex;
       align-items: center;
       justify-content: center;
+      color: #e2e8f0;
     }
     #print_container {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 28px;
-      box-shadow: 0 20px 60px rgba(15, 17, 21, 0.18);
-      width: min(92vw, 520px);
+      width: min(92vw, 540px);
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 20px;
-    }
-    #print_container h1 {
-      margin: 0;
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: #0f1115;
-      text-align: center;
     }
     #preview_wrapper {
       width: 100%;
       display: flex;
       justify-content: center;
       padding: 18px;
-      border-radius: 18px;
-      background: #e2e8f0;
-      box-shadow: inset 0 0 0 1px rgba(15,17,21,0.05);
+      border-radius: 22px;
+      background: #0f172a;
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18), 0 30px 80px rgba(15, 23, 42, 0.55);
     }
     #preview_canvas {
-      width: min(100%, 420px);
-      aspect-ratio: 100 / 148;
+      width: min(100%, 480px);
+      aspect-ratio: 120 / 177.6;
       display: block;
       background: transparent;
       border: none;
       image-rendering: pixelated;
-    }
-    #info_panel {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      align-items: center;
-    }
-    #view_link_container {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    #view_link_container label {
-      font-size: 0.9rem;
-      color: #475569;
-    }
-    #view_link {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid #d0d5dd;
-      font-size: 0.92rem;
-      color: #1f2933;
-      background: #f8fafc;
     }
     #actions {
       display: flex;
@@ -88,11 +50,11 @@
       width: 100%;
     }
     button {
-      padding: 10px 18px;
-      border-radius: 10px;
+      padding: 12px 22px;
+      border-radius: 999px;
       border: none;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 0.96rem;
       font-weight: 600;
       transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
     }
@@ -103,59 +65,26 @@
       box-shadow: none;
     }
     #btn_print {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      color: #fff;
-      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+      background: linear-gradient(135deg, #f97316, #facc15);
+      color: #111827;
+      box-shadow: 0 10px 25px rgba(249, 115, 22, 0.35);
     }
     #btn_print:hover {
       transform: translateY(-1px);
-      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
+      box-shadow: 0 16px 35px rgba(249, 115, 22, 0.45);
     }
-    #btn_save_image, #btn_copy_view {
-      background: #e2e8f0;
-      color: #1f2933;
-      box-shadow: 0 4px 12px rgba(15, 17, 21, 0.12);
+    #btn_save_image {
+      background: rgba(15, 23, 42, 0.72);
+      color: #f8fafc;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.4);
     }
-    #btn_save_image:hover, #btn_copy_view:hover {
+    #btn_save_image:hover {
       transform: translateY(-1px);
-      background: #cbd5f5;
-    }
-    #print_tip {
-      font-size: 0.9rem;
-      color: #64748b;
-      text-align: center;
-      line-height: 1.5;
-    }
-    #base62_code {
-      font-family: "JetBrains Mono", "Fira Code", monospace;
-      font-size: 0.85rem;
-      color: #64748b;
-      word-break: break-all;
-      text-align: center;
-    }
-    #print_instructions {
-      width: 100%;
-      border-radius: 12px;
-      background: #f8fafc;
-      padding: 12px 16px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-    }
-    #print_instructions strong {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.95rem;
-      color: #0f172a;
-    }
-    #print_instructions ol {
-      margin: 0;
-      padding-left: 18px;
-      color: #475569;
-      font-size: 0.88rem;
-      line-height: 1.45;
+      background: rgba(30, 41, 59, 0.85);
     }
     #empty_state {
-      font-size: 1rem;
-      color: #475569;
+      font-size: 0.95rem;
+      color: rgba(226, 232, 240, 0.85);
       text-align: center;
     }
     @media print {
@@ -167,53 +96,33 @@
         width: 100%;
         padding: 0;
       }
-      #actions, #view_link_container {
+      #actions {
         display: none !important;
       }
       #preview_canvas {
-        width: 10cm;
-        height: 14.8cm;
+        width: 12cm;
+        height: 17.76cm;
       }
     }
   </style>
 </head>
 <body>
   <div id="print_container">
-    <h1>프린트용 키링 이미지</h1>
-    <p id="print_tip">1181×1748px · 300 DPI · 100×148mm (A6) 캔버스에 4.5×3.5cm 이미지 2장을 배치했습니다. 출력 시 “실제 크기(100%)”로 맞춰주세요.</p>
     <div id="preview_wrapper">
-      <canvas id="preview_canvas" width="1181" height="1748"></canvas>
+  <canvas id="preview_canvas" width="1417" height="2098"></canvas>
     </div>
-    <div id="base62_code"></div>
     <div id="actions">
       <button id="btn_print">프린트</button>
       <button id="btn_save_image">이미지 저장</button>
-      <button id="btn_copy_view">뷰 링크 복사</button>
-    </div>
-    <div id="print_instructions">
-      <strong>출력 체크리스트</strong>
-      <ol>
-        <li>프린터 설정에서 용지 크기 A6(100×148mm) 또는 4×6 인화지를 선택합니다.</li>
-        <li>배율은 “실제 크기(100%)” / “비율 조정 없음”으로 고정합니다.</li>
-        <li>여백이 생기면 그대로 두고 잘라내면 QR과 테두리가 안전하게 남습니다.</li>
-      </ol>
-    </div>
-    <div id="view_link_container" hidden>
-      <label for="view_link">상호작용 화면 (view.html)</label>
-      <input id="view_link" readonly>
     </div>
     <div id="empty_state" hidden>그림 데이터가 없습니다.</div>
   </div>
 
   <script>
-  const previewCanvas = document.getElementById('preview_canvas');
-  const previewCtx = previewCanvas.getContext('2d');
+    const previewCanvas = document.getElementById('preview_canvas');
+    const previewCtx = previewCanvas.getContext('2d');
     const btnPrint = document.getElementById('btn_print');
     const btnSaveImage = document.getElementById('btn_save_image');
-    const copyViewBtn = document.getElementById('btn_copy_view');
-    const viewLinkContainer = document.getElementById('view_link_container');
-    const viewLinkInput = document.getElementById('view_link');
-    const base62CodeDiv = document.getElementById('base62_code');
     const emptyState = document.getElementById('empty_state');
 
     const GRID_SIZE = 10;
@@ -221,8 +130,17 @@
     const BITS_PER_PIXEL = 3;
     const MM_PER_INCH = 25.4;
     const PRINT_DPI = 300;
-    const CARD_MM = { width: 100, height: 148 };
-    const PHOTO_MM = { width: 35, height: 45 }; // 3.5cm x 4.5cm
+    const SCALE_FACTOR = 1.2;
+    const BASE_CARD_MM = { width: 100, height: 148 };
+    const BASE_PHOTO_MM = { width: 35, height: 45 };
+    const CARD_MM = {
+      width: BASE_CARD_MM.width * SCALE_FACTOR,
+      height: BASE_CARD_MM.height * SCALE_FACTOR
+    };
+    const PHOTO_MM = {
+      width: BASE_PHOTO_MM.width * SCALE_FACTOR,
+      height: BASE_PHOTO_MM.height * SCALE_FACTOR
+    };
     const DUPLICATE_COUNT = 2;
     const OUTPUT_PX = {
       width: Math.round((CARD_MM.width / MM_PER_INCH) * PRINT_DPI),
@@ -240,40 +158,29 @@
       '#8B5CF6'  // c7 - Purple
     ];
 
-    let viewUrl = '';
-
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const b62 = urlParams.get('b62');
 
-  configureCanvas();
+      configureCanvas();
 
-  if (b62) {
+      if (b62) {
         renderPixelArt(b62);
-        base62CodeDiv.textContent = `Base62 코드: ${b62}`;
-        viewUrl = new URL('view.html', window.location.href).href + '?b62=' + b62;
-        viewLinkInput.value = viewUrl;
-        viewLinkContainer.hidden = false;
         emptyState.hidden = true;
         setActionsEnabled(true);
       } else {
         clearCanvas();
-        base62CodeDiv.textContent = '';
-        viewLinkContainer.hidden = true;
-        viewLinkInput.value = '';
         emptyState.hidden = false;
         setActionsEnabled(false);
       }
 
       btnPrint.addEventListener('click', () => window.print());
       btnSaveImage.addEventListener('click', saveImage);
-      copyViewBtn.addEventListener('click', copyViewLink);
     });
 
     function setActionsEnabled(enabled) {
       btnPrint.disabled = !enabled;
       btnSaveImage.disabled = !enabled;
-      copyViewBtn.disabled = !enabled;
     }
 
     function configureCanvas() {
@@ -306,8 +213,6 @@
           y: photoY,
           width: photoWidthPx,
           height: photoHeightPx,
-          squareY,
-          squareSizePx,
           pxPerMm
         });
 
@@ -380,34 +285,9 @@
 
     function saveImage() {
       const link = document.createElement('a');
-      link.download = 'keyring-print-100x148.png';
+      link.download = 'keyring-print-120.png';
       link.href = previewCanvas.toDataURL('image/png');
       link.click();
-    }
-
-    function copyViewLink() {
-      if (!viewUrl) {
-        return;
-      }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(viewUrl)
-          .then(() => alert('view.html 링크가 복사되었습니다.'))
-          .catch(fallbackCopyViewLink);
-      } else {
-        fallbackCopyViewLink();
-      }
-    }
-
-    function fallbackCopyViewLink() {
-      viewLinkInput.focus();
-      viewLinkInput.select();
-      viewLinkInput.setSelectionRange(0, viewLinkInput.value.length);
-      try {
-        document.execCommand('copy');
-        alert('view.html 링크가 복사되었습니다.');
-      } catch (err) {
-        alert('복사에 실패했습니다. 직접 선택해서 복사해주세요.');
-      }
     }
   </script>
 </body>
