@@ -177,15 +177,16 @@
     const btnPrint = document.getElementById('btn_print');
     const btnSaveImage = document.getElementById('btn_save_image');
     const emptyState = document.getElementById('empty_state');
-  const viewLinkContainer = document.getElementById('view_link_container');
-  const viewLinkAnchor = document.getElementById('view_link');
+    const viewLinkContainer = document.getElementById('view_link_container');
+    const viewLinkAnchor = document.getElementById('view_link');
+    const btnCopyView = document.getElementById('btn_copy_view');
 
     const GRID_SIZE = 10;
     const PIXEL_COUNT = GRID_SIZE * GRID_SIZE;
     const BITS_PER_PIXEL = 3;
     const MM_PER_INCH = 25.4;
-  const PRINT_DPI = 300;
-  const SCALE_FACTOR = 1.1;
+    const PRINT_DPI = 300;
+    const SCALE_FACTOR = 1.1;
     const BASE_CARD_MM = { width: 100, height: 148 };
     const BASE_PHOTO_MM = { width: 35, height: 45 };
     const CARD_MM = {
@@ -213,7 +214,7 @@
       '#8B5CF6'  // c7 - Purple
     ];
 
-  let viewUrl = '';
+    let viewUrl = '';
 
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -227,6 +228,7 @@
         viewLinkAnchor.textContent = viewUrl;
         viewLinkAnchor.href = viewUrl;
         viewLinkContainer.hidden = false;
+        btnCopyView.disabled = false;
         emptyState.hidden = true;
         setActionsEnabled(true);
       } else {
@@ -235,12 +237,14 @@
         viewLinkAnchor.textContent = '';
         viewLinkAnchor.removeAttribute('href');
         viewLinkContainer.hidden = true;
+        btnCopyView.disabled = true;
         emptyState.hidden = false;
         setActionsEnabled(false);
       }
 
       btnPrint.addEventListener('click', () => window.print());
       btnSaveImage.addEventListener('click', saveImage);
+      btnCopyView.addEventListener('click', copyViewLink);
     });
 
     function setActionsEnabled(enabled) {
@@ -353,6 +357,35 @@
   link.download = 'keyring-print-110.png';
       link.href = previewCanvas.toDataURL('image/png');
       link.click();
+    }
+
+    function copyViewLink() {
+      if (!viewUrl) {
+        return;
+      }
+      const copyText = viewUrl.replace(/^https?:\/\//i, '');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(copyText)
+          .then(() => alert('주소가 복사되었습니다.'))
+          .catch(() => fallbackCopy(copyText));
+      } else {
+        fallbackCopy(copyText);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const tempInput = document.createElement('textarea');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        alert('주소가 복사되었습니다.');
+      } catch (error) {
+        alert('복사에 실패했습니다. 직접 선택해서 복사해주세요.');
+      } finally {
+        document.body.removeChild(tempInput);
+      }
     }
   </script>
 </body>
