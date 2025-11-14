@@ -46,8 +46,8 @@
       box-shadow: inset 0 0 0 1px rgba(15,17,21,0.05);
     }
     #preview_canvas {
-      width: min(100%, 360px);
-      aspect-ratio: 34 / 44;
+      width: min(100%, 420px);
+      aspect-ratio: 100 / 148;
       display: block;
       background: transparent;
       border: none;
@@ -120,12 +120,38 @@
       transform: translateY(-1px);
       background: #cbd5f5;
     }
+    #print_tip {
+      font-size: 0.9rem;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.5;
+    }
     #base62_code {
       font-family: "JetBrains Mono", "Fira Code", monospace;
       font-size: 0.85rem;
       color: #64748b;
       word-break: break-all;
       text-align: center;
+    }
+    #print_instructions {
+      width: 100%;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 12px 16px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+    #print_instructions strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      color: #0f172a;
+    }
+    #print_instructions ol {
+      margin: 0;
+      padding-left: 18px;
+      color: #475569;
+      font-size: 0.88rem;
+      line-height: 1.45;
     }
     #empty_state {
       font-size: 1rem;
@@ -145,8 +171,8 @@
         display: none !important;
       }
       #preview_canvas {
-        width: 3.4cm;
-        height: 4.4cm;
+        width: 10cm;
+        height: 14.8cm;
       }
     }
   </style>
@@ -154,14 +180,23 @@
 <body>
   <div id="print_container">
     <h1>프린트용 키링 이미지</h1>
+    <p id="print_tip">1181×1748px · 300 DPI · 100×148mm (A6) 캔버스에 4.5×3.5cm 이미지 2장을 배치했습니다. 출력 시 “실제 크기(100%)”로 맞춰주세요.</p>
     <div id="preview_wrapper">
-      <canvas id="preview_canvas" width="680" height="880"></canvas>
+      <canvas id="preview_canvas" width="1181" height="1748"></canvas>
     </div>
     <div id="base62_code"></div>
     <div id="actions">
       <button id="btn_print">프린트</button>
       <button id="btn_save_image">이미지 저장</button>
       <button id="btn_copy_view">뷰 링크 복사</button>
+    </div>
+    <div id="print_instructions">
+      <strong>출력 체크리스트</strong>
+      <ol>
+        <li>프린터 설정에서 용지 크기 A6(100×148mm) 또는 4×6 인화지를 선택합니다.</li>
+        <li>배율은 “실제 크기(100%)” / “비율 조정 없음”으로 고정합니다.</li>
+        <li>여백이 생기면 그대로 두고 잘라내면 QR과 테두리가 안전하게 남습니다.</li>
+      </ol>
     </div>
     <div id="view_link_container" hidden>
       <label for="view_link">상호작용 화면 (view.html)</label>
@@ -171,8 +206,8 @@
   </div>
 
   <script>
-    const previewCanvas = document.getElementById('preview_canvas');
-    const previewCtx = previewCanvas.getContext('2d');
+  const previewCanvas = document.getElementById('preview_canvas');
+  const previewCtx = previewCanvas.getContext('2d');
     const btnPrint = document.getElementById('btn_print');
     const btnSaveImage = document.getElementById('btn_save_image');
     const copyViewBtn = document.getElementById('btn_copy_view');
@@ -184,6 +219,15 @@
     const GRID_SIZE = 10;
     const PIXEL_COUNT = GRID_SIZE * GRID_SIZE;
     const BITS_PER_PIXEL = 3;
+    const MM_PER_INCH = 25.4;
+    const PRINT_DPI = 300;
+    const CARD_MM = { width: 100, height: 148 };
+    const PHOTO_MM = { width: 35, height: 45 }; // 3.5cm x 4.5cm
+    const DUPLICATE_COUNT = 2;
+    const OUTPUT_PX = {
+      width: Math.round((CARD_MM.width / MM_PER_INCH) * PRINT_DPI),
+      height: Math.round((CARD_MM.height / MM_PER_INCH) * PRINT_DPI)
+    };
 
     const PALETTE_COLORS = [
       '#FFFFFF', // c0 - White
@@ -202,7 +246,9 @@
       const urlParams = new URLSearchParams(window.location.search);
       const b62 = urlParams.get('b62');
 
-      if (b62) {
+  configureCanvas();
+
+  if (b62) {
         renderPixelArt(b62);
         base62CodeDiv.textContent = `Base62 코드: ${b62}`;
         viewUrl = new URL('view.html', window.location.href).href + '?b62=' + b62;
@@ -230,52 +276,61 @@
       copyViewBtn.disabled = !enabled;
     }
 
+    function configureCanvas() {
+      previewCanvas.width = OUTPUT_PX.width;
+      previewCanvas.height = OUTPUT_PX.height;
+    }
+
     function renderPixelArt(b62String) {
       clearCanvas();
 
       const decodedBigInt = base62.decode(b62String);
       const binaryString = decodedBigInt.toString(2).padStart(PIXEL_COUNT * BITS_PER_PIXEL, '0');
 
-      const CARD_WIDTH_CM = 3.4;
-      const CARD_HEIGHT_CM = 4.4;
-      const PHOTO_SIZE_CM = 3.0;
-      const pxPerCm = previewCanvas.width / CARD_WIDTH_CM;
-
-      const photoSizePx = PHOTO_SIZE_CM * pxPerCm;
-      const sideMarginPx = ((CARD_WIDTH_CM - PHOTO_SIZE_CM) / 2) * pxPerCm;
-      const verticalMarginPx = ((CARD_HEIGHT_CM - PHOTO_SIZE_CM) / 2) * pxPerCm;
-      const photoX = sideMarginPx;
-      const photoY = verticalMarginPx;
-
-      previewCtx.save();
-      previewCtx.fillStyle = '#f8fafc';
-      previewCtx.fillRect(photoX, photoY, photoSizePx, photoSizePx);
-      previewCtx.restore();
+      const pxPerMm = previewCanvas.width / CARD_MM.width;
+      const photoWidthPx = PHOTO_MM.width * pxPerMm;
+      const photoHeightPx = PHOTO_MM.height * pxPerMm;
+      const squareSizePx = photoWidthPx;
+      const horizontalMarginPx = (previewCanvas.width - photoWidthPx) / 2;
+      const verticalSpacingPx = (previewCanvas.height - (photoHeightPx * DUPLICATE_COUNT)) / (DUPLICATE_COUNT + 1);
 
       previewCtx.imageSmoothingEnabled = false;
-      const pixelSize = photoSizePx / GRID_SIZE;
 
-      for (let i = 0; i < PIXEL_COUNT; i++) {
-        const offset = i * BITS_PER_PIXEL;
-        const colorBits = binaryString.substring(offset, offset + BITS_PER_PIXEL);
-        const colorIndex = parseInt(colorBits, 2);
-        const row = Math.floor(i / GRID_SIZE);
-        const col = i % GRID_SIZE;
-        previewCtx.fillStyle = PALETTE_COLORS[colorIndex] ?? PALETTE_COLORS[0];
-        previewCtx.fillRect(
-          photoX + col * pixelSize,
-          photoY + row * pixelSize,
-          pixelSize,
-          pixelSize
-        );
+      for (let copyIndex = 0; copyIndex < DUPLICATE_COUNT; copyIndex++) {
+        const photoX = horizontalMarginPx;
+        const photoY = verticalSpacingPx + copyIndex * (photoHeightPx + verticalSpacingPx);
+        const squareY = photoY + (photoHeightPx - squareSizePx) / 2;
+
+        drawPhotoFrame({
+          x: photoX,
+          y: photoY,
+          width: photoWidthPx,
+          height: photoHeightPx,
+          squareY,
+          squareSizePx,
+          pxPerMm
+        });
+
+        const pixelSize = squareSizePx / GRID_SIZE;
+        for (let i = 0; i < PIXEL_COUNT; i++) {
+          const offset = i * BITS_PER_PIXEL;
+          const colorBits = binaryString.substring(offset, offset + BITS_PER_PIXEL);
+          const colorIndex = parseInt(colorBits, 2);
+          const row = Math.floor(i / GRID_SIZE);
+          const col = i % GRID_SIZE;
+          previewCtx.fillStyle = PALETTE_COLORS[colorIndex] ?? PALETTE_COLORS[0];
+          previewCtx.fillRect(
+            photoX + col * pixelSize,
+            squareY + row * pixelSize,
+            pixelSize,
+            pixelSize
+          );
+        }
+
+        drawSquareGuide({ x: photoX, y: squareY, size: squareSizePx, pxPerMm });
       }
 
-      drawPrintGuides({
-        photoX,
-        photoY,
-        photoSizePx,
-        pxPerCm
-      });
+      drawCutGuides(pxPerMm);
     }
 
     function clearCanvas() {
@@ -283,33 +338,49 @@
       previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
     }
 
-    function drawPrintGuides({ photoX, photoY, photoSizePx, pxPerCm }) {
-      const borderStroke = Math.max(2, pxPerCm * 0.05);
-      const dashSize = Math.max(6, pxPerCm * 0.25);
-      const borderInset = borderStroke / 2;
-
+    function drawPhotoFrame({ x, y, width, height, pxPerMm }) {
       previewCtx.save();
-      previewCtx.strokeStyle = '#1d4ed8';
-      previewCtx.lineWidth = borderStroke;
-      previewCtx.setLineDash([dashSize, dashSize * 0.8]);
-      previewCtx.strokeRect(
-        borderInset,
-        borderInset,
-        previewCanvas.width - borderStroke,
-        previewCanvas.height - borderStroke
-      );
+      previewCtx.fillStyle = '#ffffff';
+      previewCtx.fillRect(x, y, width, height);
       previewCtx.restore();
 
       previewCtx.save();
-      previewCtx.strokeStyle = 'rgba(15, 17, 21, 0.08)';
-      previewCtx.lineWidth = Math.max(1, pxPerCm * 0.02);
-      previewCtx.strokeRect(photoX, photoY, photoSizePx, photoSizePx);
+      previewCtx.strokeStyle = '#1d4ed8';
+      previewCtx.lineWidth = Math.max(2, pxPerMm * 0.2);
+      previewCtx.strokeRect(x, y, width, height);
+      previewCtx.restore();
+    }
+
+    function drawSquareGuide({ x, y, size, pxPerMm }) {
+      previewCtx.save();
+      previewCtx.strokeStyle = 'rgba(15, 17, 21, 0.18)';
+      previewCtx.setLineDash([pxPerMm * 2, pxPerMm * 1.3]);
+      previewCtx.lineWidth = Math.max(1, pxPerMm * 0.12);
+      previewCtx.strokeRect(x, y, size, size);
+      previewCtx.restore();
+    }
+
+    function drawCutGuides(pxPerMm) {
+      const borderStroke = Math.max(2, pxPerMm * 0.25);
+      const dashSize = pxPerMm * 3;
+      const inset = borderStroke / 2;
+
+      previewCtx.save();
+      previewCtx.strokeStyle = '#64748b';
+      previewCtx.setLineDash([dashSize, dashSize * 0.8]);
+      previewCtx.lineWidth = borderStroke;
+      previewCtx.strokeRect(
+        inset,
+        inset,
+        previewCanvas.width - borderStroke,
+        previewCanvas.height - borderStroke
+      );
       previewCtx.restore();
     }
 
     function saveImage() {
       const link = document.createElement('a');
-      link.download = 'keyring-art.png';
+      link.download = 'keyring-print-100x148.png';
       link.href = previewCanvas.toDataURL('image/png');
       link.click();
     }
